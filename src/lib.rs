@@ -1,8 +1,173 @@
 //! # Geogram Predicates
 //!
 //! A crate for rust interoperability with `geogram`s _robust predicates_; via `cxx`.
+#![no_std]
 
 pub use geogram_ffi::*;
+use robust::{Coord, Coord3D};
+
+/// Computes the orientation predicate in 3d.
+///
+/// Computes the sign of the signed volume of the tetrahedron `a`, `b`, `c`, `d`.
+///
+/// ### Parameters
+/// - `a`, `b`, `c`, `d` vertices of the tetrahedron
+///
+/// ### Return values
+/// * `+1` - if the tetrahedron is oriented positively
+/// * `0` - if the tetrahedron is flat
+/// * `-1` - if the tetrahedron is oriented negatively
+///
+/// # Example
+/// ```
+/// use geogram_predicates::orient_3d;
+///
+/// // Define four points that form a tetrahedron
+/// let a = [0.0, 0.0, 0.0];
+/// let b = [2.0, 0.0, 0.0];
+/// let c = [0.0, 2.0, 0.0];
+/// let d = [0.75, 0.75, 1.0];
+///
+/// assert_eq!(1, orient_3d(&a, &b, &c, &d));
+///```
+pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i16 {
+    let orientation = robust::orient3d(
+        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*a) },
+        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*b) },
+        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*c) },
+        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*d) },
+    );
+    if orientation > 0.0 {
+        -1
+    } else if orientation < 0.0 {
+        1
+    } else {
+        0
+    }
+}
+
+/// Computes the orientation predicate in 2d.
+///
+/// Computes the sign of the signed area of the triangle `a`, `b`, `c`.
+///
+/// ### Parameters
+/// - `a`, `b`, `c` vertices of the triangle
+///
+/// ### Return values
+/// * `+1` - if the triangle is oriented counter-clockwise
+/// * `0` - if the triangle is flat
+/// * `-1` - if the triangle is oriented clockwise
+///
+/// # Example
+/// ```
+/// use geogram_predicates::orient_2d;
+///
+/// // Define three points that form a triangle
+/// let a = [0.0, 0.0];
+/// let b = [2.0, 0.0];
+/// let c = [1.0, 1.0];
+///
+/// let orientation = orient_2d(&a, &b, &c);
+/// assert_eq!(1, orientation);
+/// ```
+pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i16 {
+    let orientation = robust::orient2d(
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*c) },
+    );
+    if orientation > 0.0 {
+        1
+    } else if orientation < 0.0 {
+        -1
+    } else {
+        0
+    }
+}
+
+
+// todo i think one extra 'i' in the name is ok
+/// Gets the sign of a value.
+///
+/// ### Parameters
+/// - `x` value to test
+///
+/// ### Return values
+/// - `+1` if `x` is positive
+/// - `0` if `x` is `0`
+/// - `-1` if `x` is negative
+///
+/// # Example
+/// ```
+/// use geogram_predicates::geo_sgn;
+///
+/// let a = 42.0;
+/// let b = -42.0;
+/// let c = 0.0;
+///
+/// assert_eq!(1, geo_sgn(a));
+/// assert_eq!(-1, geo_sgn(b));
+/// assert_eq!(0, geo_sgn(c));
+///
+/// ```
+pub fn geo_sgn(x: f64) -> i16 {
+    if x > 0.0 { 1 } else if x < 0.0 { -1 } else { 0 }
+}
+
+/// Tests whether a point is in the circum-circle of a triangle.
+///
+/// If the triangle `a` , `b` , `c` is oriented clockwise instead of counter-clockwise, then the result is inversed.
+///
+/// ### Parameters
+/// - `a`, `b`, `c` vertices of the triangle
+/// - `p` point to test
+/// - `PERTURB` (const) - true is `+1` false is `-1` consistent perturbation
+///
+/// ### Return values
+/// * `+1` - if `p` is inside the circum-circle of `a`, `b`, `c`
+/// * `-1` - if `p` is outside the circum-circle of `a`, `b`, `c`
+/// * `PERTURB` - if `p` is exactly on the circum-circle of the triangle `a`, `b`, `c`, where `perturb()` denotes a consistent perturbation, that returns either `+1` or `-1`
+///
+/// # Example
+/// ```
+/// use geogram_predicates as gp;
+///
+/// // Define three points that form a triangle
+/// let a = [0.0, 0.0];
+/// let b = [2.0, 0.0];
+/// let c = [1.0, 1.0];
+///
+/// // Define two points, to test against the triangles circum-circle
+/// let p_in = [1.0, -0.4];
+/// let p_out = [1.0, -1.2];
+///
+/// let is_in_circle_p_in = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_in);
+/// assert_eq!(1, is_in_circle_p_in);
+/// # let is_in_circle_p_in = gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_in);
+/// # assert_eq!(1, is_in_circle_p_in);
+///
+/// let is_in_circle_p_out = gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_out);
+/// assert_eq!(-1, is_in_circle_p_out);
+/// # let is_in_circle_p_out = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out);
+/// # assert_eq!(-1, is_in_circle_p_out);
+/// ```
+pub fn in_circle_2d_SOS<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i16 {
+    let incircle = robust::incircle(
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*c) },
+        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*p) },
+    );
+
+    if incircle > 0.0 {
+        1
+    } else if incircle < 0.0 {
+        -1
+    } else {
+        const { if PERTURB { 1 } else { -1 } }
+    }
+}
+
 
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {
@@ -83,64 +248,6 @@ mod geogram_ffi {
         /// ```
         fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
 
-        /// Gets the sign of a value.
-        ///
-        /// ### Parameters
-        /// - `x` value to test
-        ///
-        /// ### Return values
-        /// - `+1` if `x` is positive
-        /// - `0` if `x` is `0`
-        /// - `-1` if `x` is negative
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// let a = 42.0;
-        /// let b = -42.0;
-        /// let c = 0.0;
-        ///
-        /// assert_eq!(1, gp::geo_sgn(a));
-        /// assert_eq!(-1, gp::geo_sgn(b));
-        /// assert_eq!(0, gp::geo_sgn(c));
-        ///
-        /// ```
-        fn geo_sgn(x: f64) -> i16;
-
-        /// Tests whether a point is in the circum-circle of a triangle.
-        ///
-        /// If the triangle `a` , `b` , `c` is oriented clockwise instead of counter-clockwise, then the result is inversed.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c` vertices of the triangle
-        /// - `p` point to test
-        ///
-        /// ### Return values
-        /// * `+1` - if `p` is inside the circum-circle of `a`, `b`, `c`
-        /// * `-1` - if `p` is outside the circum-circle of `a`, `b`, `c`
-        /// * `perturb()` - if `p` is exactly on the circum-circle of the triangle `a`, `b`, `c`, where `perturb()` denotes a globally consistent perturbation, that returns either `+1` or `-1`
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define three points that form a triangle
-        /// let a = [0.0, 0.0];
-        /// let b = [2.0, 0.0];
-        /// let c = [1.0, 1.0];
-        ///
-        /// // Define two points, to test against the triangles circum-circle
-        /// let p_in = [1.0, -0.4];
-        /// let p_out = [1.0, -1.2];
-        ///
-        /// let is_in_circle_p_in = gp::in_circle_2d_SOS(&a, &b, &c, &p_in);
-        /// assert_eq!(1, is_in_circle_p_in);
-        ///
-        /// let is_in_circle_p_out = gp::in_circle_2d_SOS(&a, &b, &c, &p_out);
-        /// assert_eq!(-1, is_in_circle_p_out);
-        /// ```
-        fn in_circle_2d_SOS(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i16;
 
         /// Tests whether a point is in the circum-sphere of a tetrahedron.
         ///
@@ -180,32 +287,6 @@ mod geogram_ffi {
 
         /// Needs to be called before using any predicate.
         fn initialize();
-
-        /// Computes the orientation predicate in 2d.
-        ///
-        /// Computes the sign of the signed area of the triangle `a`, `b`, `c`.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c` vertices of the triangle
-        ///
-        /// ### Return values
-        /// * `+1` - if the triangle is oriented counter-clockwise
-        /// * `0` - if the triangle is flat
-        /// * `-1` - if the triangle is oriented clockwise
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define three points that form a triangle
-        /// let a = [0.0, 0.0];
-        /// let b = [2.0, 0.0];
-        /// let c = [1.0, 1.0];
-        ///
-        /// let orientation = gp::orient_2d(&a, &b, &c);
-        /// assert_eq!(1, orientation);
-        /// ```
-        fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i16;
 
         /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
         ///
@@ -268,32 +349,6 @@ mod geogram_ffi {
             h_c: f64,
             h_p: f64,
         ) -> i16;
-
-        /// Computes the orientation predicate in 3d.
-        ///
-        /// Computes the sign of the signed volume of the tetrahedron `a`, `b`, `c`, `d`.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
-        ///
-        /// ### Return values
-        /// * `+1` - if the tetrahedron is oriented positively
-        /// * `0` - if the tetrahedron is flat
-        /// * `-1` - if the tetrahedron is oriented negatively
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define four points that form a tetrahedron
-        /// let a = [0.0, 0.0, 0.0];
-        /// let b = [2.0, 0.0, 0.0];
-        /// let c = [0.0, 2.0, 0.0];
-        /// let d = [0.75, 0.75, 1.0];
-        ///
-        /// assert_eq!(1, gp::orient_3d(&a, &b, &c, &d));
-        ///```
-        fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i16;
 
         /// Computes the (approximate) orientation predicate in 3d.
         ///
@@ -411,52 +466,56 @@ mod geogram_ffi {
         /// ```
         fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool;
 
-        /// Tests whether two 2d points are identical.
-        ///
-        /// ### Parameters
-        /// - `p1` first point
-        /// - `p2` second point
-        ///
-        /// ### Return values
-        /// - `true` - if `p1` and `p2` have exactly the same coordinates
-        /// - `false` - otherwise
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// let p1 = [4.0, 2.0];
-        /// let p2 = [4.0, 2.0];
-        ///
-        /// assert!(gp::points_are_identical_2d(&p1, &p2));
-        /// ```
-        fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool;
-
-        /// Tests whether two 3d points are identical.
-        ///
-        /// ### Parameters
-        /// - `p1` first point
-        /// - `p2` second point
-        ///
-        /// ### Return values
-        /// - `true` - if `p1` and `p2` have exactly the same coordinates
-        /// - `false` - otherwise
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// let p1 = [4.0, 2.0, 0.42];
-        /// let p2 = [4.0, 2.0, 0.42];
-        ///
-        /// assert!(gp::points_are_identical_3d(&p1, &p2));
-        /// ```
-        fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool;
-
         /// Displays some statistics about predicates, including the number of calls, the number of exact arithmetics calls, and the number of Simulation of Simplicity calls.
         fn show_stats();
 
         /// Needs to be called at the end of the program.
         fn terminate();
     }
+}
+
+/// Tests whether two 2d points are identical.
+///
+/// ### Parameters
+/// - `p1` first point
+/// - `p2` second point
+///
+/// ### Return values
+/// - `true` - if `p1` and `p2` have exactly the same coordinates
+/// - `false` - otherwise
+///
+/// # Example
+/// ```
+/// use geogram_predicates::points_are_identical_2d;
+///
+/// let p1 = [4.0, 2.0];
+/// let p2 = [4.0, 2.0];
+///
+/// assert!(points_are_identical_2d(&p1, &p2));
+/// ```
+pub fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
+    p1[0] == p2[0] && p1[1] == p2[1]
+}
+
+/// Tests whether two 3d points are identical.
+///
+/// ### Parameters
+/// - `p1` first point
+/// - `p2` second point
+///
+/// ### Return values
+/// - `true` - if `p1` and `p2` have exactly the same coordinates
+/// - `false` - otherwise
+///
+/// # Example
+/// ```
+/// use geogram_predicates::points_are_identical_3d;
+///
+/// let p1 = [4.0, 2.0, 0.42];
+/// let p2 = [4.0, 2.0, 0.42];
+///
+/// assert!(points_are_identical_3d(&p1, &p2));
+/// ```
+pub fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool {
+    p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]
 }

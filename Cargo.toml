@@ -11,6 +11,7 @@ keywords = ["computer-graphics", "math", "geometry", "predicates", "robust"]
 
 [dependencies]
 cxx = "1.0"
+robust = "1.1.0"
 
 [build-dependencies]
 cxx-build = "1.0"
