@@ -1,4 +1,6 @@
-workspace = { members = ["test_utils"] }
+[workspace]
+members = ["test_utils"]
+
 [package]
 name = "geogram_predicates"
 description = "Rust bindings to the Geogram library's predicates module"
@@ -8,6 +10,7 @@ authors = ["Glenn Dittmann"]
 edition = "2021"
 license = "Apache-2.0"
 keywords = ["computer-graphics", "math", "geometry", "predicates", "robust"]
+categories = ["no_std"]
 
 [dependencies]
 cxx = "1.0"
