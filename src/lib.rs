@@ -3,6 +3,9 @@
 //! A crate for rust interoperability with `geogram`s _robust predicates_; via `cxx`.
 #![no_std]
 
+#[cfg(test)]
+mod tests;
+
 pub use geogram_ffi::*;
 use robust::{Coord, Coord3D};
 

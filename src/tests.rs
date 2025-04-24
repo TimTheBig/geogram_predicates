@@ -1,0 +1,157 @@
+use crate::{self as gp};
+
+// Helper to initialize and terminate geogram
+fn setup() {
+    // initialize the C++ geogram library
+    gp::initialize();
+}
+
+#[test]
+fn test_geo_sgn() {
+    assert_eq!(gp::geo_sgn(42.0), 1);
+    assert_eq!(gp::geo_sgn(-3.14), -1);
+    assert_eq!(gp::geo_sgn(0.0), 0);
+}
+
+#[test]
+fn test_orient_2d() {
+    // CCW
+    let a = [0.0, 0.0];
+    let b = [1.0, 0.0];
+    let c = [0.0, 1.0];
+    assert_eq!(gp::orient_2d(&a, &b, &c), 1);
+    // CW
+    assert_eq!(gp::orient_2d(&a, &c, &b), -1);
+    // Co-linear
+    let d = [2.0, 0.0];
+    assert_eq!(gp::orient_2d(&a, &b, &d), 0);
+}
+
+#[test]
+fn test_orient_3d() {
+    setup();
+    let a = [0.0, 0.0, 0.0];
+    let b = [1.0, 0.0, 0.0];
+    let c = [0.0, 1.0, 0.0];
+    let d = [0.0, 0.0, 1.0];
+    // Right-handed tetrahedron
+    assert_eq!(gp::orient_3d(&a, &b, &c, &d), 1);
+    // Flip two vertices for negative orientation
+    assert_eq!(gp::orient_3d(&a, &c, &b, &d), -1);
+    // Flat
+    let e = [0.5, 0.5, 0.0];
+    assert_eq!(gp::orient_3d(&a, &b, &c, &e), 0);
+    gp::terminate();
+}
+
+
+#[test]
+fn test_points_identical() {
+    let p1 = [4.0, 2.0];
+    let p2 = [4.0, 2.0];
+    let p3 = [4.0, 2.1];
+    assert!(gp::points_are_identical_2d(&p1, &p2));
+    assert!(!gp::points_are_identical_2d(&p1, &p3));
+
+    let q1 = [1.0, 2.0, 3.0];
+    let q2 = [1.0, 2.0, 3.0];
+    let q3 = [1.0, 2.0, 3.1];
+    assert!(gp::points_are_identical_3d(&q1, &q2));
+    assert!(!gp::points_are_identical_3d(&q1, &q3));
+}
+
+#[test]
+fn test_points_colinear_3d() {
+    setup();
+    let p1 = [0.0, 0.0, 0.0];
+    let p2 = [1.0, 1.0, 1.0];
+    let p3 = [2.0, 2.0, 2.0];
+    assert!(gp::points_are_colinear_3d(&p1, &p2, &p3));
+    let p4 = [1.0, 0.0, 0.0];
+    assert!(!gp::points_are_colinear_3d(&p1, &p2, &p4));
+    gp::terminate();
+}
+
+#[test]
+fn test_in_circle_2d() {
+    setup();
+    let a = [0.0, 0.0];
+    let b = [1.0, 0.0];
+    let c = [0.0, 1.0];
+    let p_in = [0.1, 0.1];
+    let p_out = [2.0, 2.0];
+    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_in), 1);
+    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_in), 1);
+    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out), -1);
+    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_out), -1);
+    gp::terminate();
+}
+
+// On-border tests for incircle: PERTURB false -> -1, true -> +1
+#[test]
+fn test_in_circle_2d_on_border() {
+    setup();
+    let a = [0.0, 0.0];
+    let b = [1.0, 0.0];
+    let c = [0.0, 1.0];
+    // circumcenter = (0.5,0.5), radius = sqrt(0.5)
+    let r = 0.5_f64.sqrt();
+    // choose a point at angle π/4 around the circumcenter
+    let p_on = [0.5 + r / 2.0_f64.sqrt(), 0.5 + r / 2.0_f64.sqrt()];
+    // exactly on circle
+    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_on), -1);
+    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_on), 1);
+    gp::terminate();
+}
+
+
+#[test]
+fn test_det_3d_and_4d() {
+    setup();
+    let a3 = [1.0, 2.0, 3.0];
+    let b3 = [4.0, 5.0, 6.0];
+    let c3 = [7.0, 8.0, 9.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), 0);
+
+    let a4 = [1.0, 2.0, 3.0, 4.0];
+    let b4 = [5.0, 6.0, 7.0, 8.0];
+    let c4 = [9.0, 10.0, 11.0, 12.0];
+    let d4 = [13.0, 14.0, 15.0, 16.0];
+    assert_eq!(gp::det_4d(&a4, &b4, &c4, &d4), 0);
+    gp::terminate();
+}
+
+#[test]
+fn test_orient_2dlifted_and_3dlifted() {
+    setup();
+    // 2D lifted: trivial case with zero weights equals incircle
+    let a2 = [0.0, 0.0];
+    let b2 = [1.0, 0.0];
+    let c2 = [0.0, 1.0];
+    let p2 = [0.1, 0.1];
+    let h = 0.0;
+    let res = gp::orient_2dlifted_SOS(&a2, &b2, &c2, &p2, h, h, h, h);
+    assert_eq!(res, gp::in_circle_2d_SOS::<false>(&a2, &b2, &c2, &p2));
+
+    // 3D lifted: trivial with zero weights equals insphere
+    let a3 = [0.0, 0.0, 0.0];
+    let b3 = [1.0, 0.0, 0.0];
+    let c3 = [0.0, 1.0, 0.0];
+    let d3 = [0.0, 0.0, 1.0];
+    let p3 = [0.1, 0.1, 0.1];
+    let h3 = 0.0;
+    let res3 = gp::orient_3dlifted_SOS(&a3, &b3, &c3, &d3, &p3, h3, h3, h3, h3, h3);
+    assert_eq!(res3, gp::in_sphere_3d_SOS::<false>(&a3, &b3, &c3, &d3, &p3));
+    gp::terminate();
+}
+
+#[test]
+fn test_orient_3d_inexact() {
+    setup();
+    let a = [0.0, 0.0, 0.0];
+    let b = [1.0, 0.0, 0.0];
+    let c = [0.0, 1.0, 0.0];
+    let d = [0.0, 0.0, 1.0];
+    assert_eq!(gp::orient_3d_inexact(&a, &b, &c, &d), 1);
+    gp::terminate();
+}
