@@ -91,10 +91,10 @@ fn test_in_circle_2d() {
     let c = [0.0, 1.0];
     let p_in = [0.1, 0.1];
     let p_out = [2.0, 2.0];
-    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_in), 1);
-    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_in), 1);
-    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out), -1);
-    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_out), -1);
+    assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_in), 1);
+    assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_in), 1);
+    assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_out), -1);
+    assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_out), -1);
     gp::terminate();
 }
 
@@ -110,8 +110,8 @@ fn test_in_circle_2d_on_border() {
     // choose a point at angle π/4 around the circumcenter
     let p_on = [0.5 + r / 2.0_f64.sqrt(), 0.5 + r / 2.0_f64.sqrt()];
     // exactly on circle
-    assert_eq!(gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_on), -1);
-    assert_eq!(gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_on), 1);
+    assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_on), -1);
+    assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_on), 1);
     gp::terminate();
 }
 
@@ -191,7 +191,7 @@ fn test_orient_2dlifted_and_3dlifted() {
     let p2 = [0.1, 0.1];
     let h = 0.0;
     let res = gp::orient_2dlifted_SOS(&a2, &b2, &c2, &p2, h, h, h, h) as i8;
-    assert_eq!(res, gp::in_circle_2d_SOS::<false>(&a2, &b2, &c2, &p2));
+    assert_eq!(res, gp::in_circle_2d_sos::<false>(&a2, &b2, &c2, &p2));
 
     // 3D lifted: trivial with zero weights equals insphere
     let a3 = [0.0, 0.0, 0.0];
@@ -201,7 +201,7 @@ fn test_orient_2dlifted_and_3dlifted() {
     let p3 = [0.1, 0.1, 0.1];
     let h3 = 0.0;
     let res3 = gp::orient_3dlifted_SOS(&a3, &b3, &c3, &d3, &p3, h3, h3, h3, h3, h3) as i8;
-    assert_eq!(res3, gp::in_sphere_3d_SOS::<false>(&a3, &b3, &c3, &d3, &p3));
+    assert_eq!(res3, gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
     gp::terminate();
 }
 

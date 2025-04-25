@@ -6,6 +6,9 @@
 #[cfg(test)]
 mod tests;
 
+mod expansion;
+use expansion::Expansion;
+
 pub use geogram_ffi::*;
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
@@ -226,7 +229,7 @@ pub fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i8 {
 }
 
 #[inline]
-fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
+const fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
     const FPG_UNCERTAIN_VALUE: i8 = 0;
 
     let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
@@ -271,6 +274,36 @@ fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
         }
     }
 }
+
+/// Computes the sign of the determinant of a 3x3
+/// matrix formed by three 3d points using exact arithmetics.
+///
+/// ### Parameters
+/// p0 , p1 , p2 the three points
+///
+/// ### Returns
+/// The sign of the determinant of the matrix.
+// fn det_3d_exact(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
+//     let p0_0 = Expansion::from(p0[0]);
+//     let p0_1 = Expansion::from(p0[1]);
+//     let p0_2 = Expansion::from(p0[2]);
+
+//     let p1_0 = Expansion::from(p1[0]);
+//     let p1_1 = Expansion::from(p1[1]);
+//     let p1_2 = Expansion::from(p1[2]);
+
+//     let p2_0 = Expansion::from(p2[0]);
+//     let p2_1 = Expansion::from(p2[1]);
+//     let p2_2 = Expansion::from(p2[2]);
+
+//     let Delta = expansion_det3x3!(
+//         p0_0, p0_1, p0_2,
+//         p1_0, p1_1, p1_2,
+//         p2_0, p2_1, p2_2
+//     );
+
+//     return Delta.sign().into();
+// }
 
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {
@@ -329,27 +362,6 @@ mod geogram_ffi {
         /// ```
         fn det_4d(a: &[f64; 4], b: &[f64; 4], c: &[f64; 4], d: &[f64; 4]) -> i16;
 
-        /// Computes the sign of the dot product between two vectors.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c`, three 3d points
-        ///
-        /// ### Returns
-        /// - the sign of the dot product between the vectors `ab` and `ac`
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// /// // Define four points that form a matrix
-        /// let a = [0.0, 0.0, 0.0];
-        /// let b = [1.0, 0.0, 0.0];
-        /// let c = [0.0, 1.0, 0.0];
-        ///
-        /// let dot_sign = gp::dot_3d(&a, &b, &c); // should be orthogonal
-        /// assert_eq!(dot_sign, 0);
-        /// ```
-        fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
 
 
         /// Tests whether a point is in the circum-sphere of a tetrahedron.
@@ -452,32 +464,6 @@ mod geogram_ffi {
             h_c: f64,
             h_p: f64,
         ) -> i16;
-
-        /// Computes the (approximate) orientation predicate in 3d.
-        ///
-        /// Computes the sign of the (approximate) signed volume of the tetrahedron `a`, `b`, `c`, `d`.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
-        ///
-        /// ### Return values
-        /// * `+1` - if the tetrahedron is oriented positively
-        /// * `0` - if the tetrahedron is flat
-        /// * `-1` - if the tetrahedron is oriented negatively
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define four points that form a tetrahedron
-        /// let a = [0.0, 0.0, 0.0];
-        /// let b = [2.0, 0.0, 0.0];
-        /// let c = [0.0, 2.0, 0.0];
-        /// let d = [0.75, 0.75, 1.0];
-        ///
-        /// assert_eq!(1, gp::orient_3d_inexact(&a, &b, &c, &d));
-        ///```
-        fn orient_3d_inexact(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i16;
 
         /// Computes the 4d orientation test with lifted points, i.e the regularity test for 3d.
         ///
@@ -596,7 +582,7 @@ mod geogram_ffi {
 ///
 /// assert!(points_are_identical_2d(&p1, &p2));
 /// ```
-pub fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
+pub const fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1]
 }
 
@@ -619,6 +605,71 @@ pub fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
 ///
 /// assert!(points_are_identical_3d(&p1, &p2));
 /// ```
-pub fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool {
+pub const fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]
+}
+
+/// Computes the (approximate) orientation predicate in 3d.
+///
+/// Computes the sign of the (approximate) signed volume of the tetrahedron `a`, `b`, `c`, `d`.
+///
+/// ### Parameters
+/// - `a`, `b`, `c`, `d` vertices of the tetrahedron
+///
+/// ### Return values
+/// * `+1` - if the tetrahedron is oriented positively
+/// * `0` - if the tetrahedron is flat
+/// * `-1` - if the tetrahedron is oriented negatively
+///
+/// # Example
+/// ```
+/// use geogram_predicates as gp;
+///
+/// // Define four points that form a tetrahedron
+/// let a = [0.0, 0.0, 0.0];
+/// let b = [2.0, 0.0, 0.0];
+/// let c = [0.0, 2.0, 0.0];
+/// let d = [0.75, 0.75, 1.0];
+///
+/// assert_eq!(1, gp::orient_3d_inexact(&a, &b, &c, &d));
+///```
+pub const fn orient_3d_inexact(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i8 {
+    let p0 = a;
+    let p1 = b;
+    let p2 = c;
+    let p3 = d;
+
+    let a11 = p1[0] - p0[0];
+    let a12 = p1[1] - p0[1];
+    let a13 = p1[2] - p0[2];
+
+    let a21 = p2[0] - p0[0];
+    let a22 = p2[1] - p0[1];
+    let a23 = p2[2] - p0[2];
+
+    let a31 = p3[0] - p0[0];
+    let a32 = p3[1] - p0[1];
+    let a33 = p3[2] - p0[2];
+
+    let delta =  det3x3(
+        [a11, a12, a13],
+        [a21, a22, a23],
+        [a31, a32, a33],
+    );
+
+    geo_sgn(delta)
+}
+
+/// Computes the determinant of a 3x3 matrix given by coefficients.
+#[inline]
+const fn det3x3(
+    [a00, a01, a02]: [f64; 3],
+    [a10, a11, a12]: [f64; 3],
+    [a20, a21, a22]: [f64; 3],
+) -> f64 {
+    let m01 = a00 * a11 - a10 * a01;
+    let m02 = a00 * a21 - a20 * a01;
+    let m12 = a10 * a21 - a20 * a11;
+
+    m01 * a22 - m02 * a12 + m12 * a02
 }
