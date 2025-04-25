@@ -184,7 +184,7 @@ pub const fn geo_sgn(x: f64) -> i8 {
 /// # let is_in_circle_p_out = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out);
 /// # assert_eq!(-1, is_in_circle_p_out);
 /// ```
-pub fn in_circle_2d_SOS<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i8 {
+pub fn in_circle_2d_sos<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i8 {
     let incircle = robust::incircle(
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
@@ -304,7 +304,7 @@ mod geogram_ffi {
         /// let det = gp::det_3d(&a, &b, &c);
         /// assert_eq!(det, 0);
         /// ```
-        fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
+        // fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
 
         /// Computes the sign of the determinant of a 4x4 matrix formed by four 4D points.
         ///
