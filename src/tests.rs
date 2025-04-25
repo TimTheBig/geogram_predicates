@@ -44,6 +44,17 @@ fn test_orient_3d() {
     gp::terminate();
 }
 
+#[test]
+fn test_dot_3d() {
+    let a = [0.0, 0.0, 0.0];
+    let b = [1.0, 0.0, 0.0];
+    let c = [0.0, 1.0, 0.0];
+    // orthogonal
+    assert_eq!(gp::dot_3d(&a, &b, &c), true);
+    // same direction
+    let d = [2.0, 0.0, 0.0];
+    assert_eq!(gp::dot_3d(&a, &b, &d), true);
+}
 
 #[test]
 fn test_points_identical() {
@@ -122,6 +133,55 @@ fn test_det_3d_and_4d() {
 }
 
 #[test]
+fn test_det_3d() {
+    // Linearly dependent vectors -> determinant should be 0
+    let a3 = [1.0, 2.0, 3.0];
+    let b3 = [4.0, 5.0, 6.0];
+    let c3 = [7.0, 8.0, 9.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), 0);
+
+    // Standard basis vectors -> determinant should be 1
+    let a3 = [1.0, 0.0, 0.0];
+    let b3 = [0.0, 1.0, 0.0];
+    let c3 = [0.0, 0.0, 1.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), 1);
+
+    // Negated basis vector -> determinant should be -1
+    let a3 = [1.0, 0.0, 0.0];
+    let b3 = [0.0, -1.0, 0.0];
+    let c3 = [0.0, 0.0, 1.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), -1);
+
+    // Swapped rows should negate the determinant
+    let a3 = [0.0, 1.0, 0.0];
+    let b3 = [1.0, 0.0, 0.0];
+    let c3 = [0.0, 0.0, 1.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), -1);
+
+    // Determinant of identity matrix should be 1
+    let a3 = [1.0, 0.0, 0.0];
+    let b3 = [0.0, 1.0, 0.0];
+    let c3 = [0.0, 0.0, 1.0];
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), 1);
+
+    let a = [1.0, 0.0, 0.0];
+    let b = [0.0, 1.0, 0.0];
+    let c = [1.0, 1.0, 0.0];
+    assert_eq!(gp::det_3d(&a, &b, &c), 0);
+
+    let a = [1e-10, 0.0,    0.0];
+    let b = [0.0,    1e-10, 0.0];
+    let c = [0.0,    0.0,    1e-10];
+    assert_eq!(gp::det_3d(&a, &b, &c), 1);
+
+    let a = [1e25, 0.0,   0.0];
+    let b = [0.0,   1e25, 0.0];
+    let c = [0.0,   0.0,  -1e25];
+    assert_eq!(gp::det_3d(&a, &b, &c), -1);
+}
+
+
+#[test]
 fn test_orient_2dlifted_and_3dlifted() {
     setup();
     // 2D lifted: trivial case with zero weights equals incircle
@@ -130,7 +190,7 @@ fn test_orient_2dlifted_and_3dlifted() {
     let c2 = [0.0, 1.0];
     let p2 = [0.1, 0.1];
     let h = 0.0;
-    let res = gp::orient_2dlifted_SOS(&a2, &b2, &c2, &p2, h, h, h, h);
+    let res = gp::orient_2dlifted_SOS(&a2, &b2, &c2, &p2, h, h, h, h) as i8;
     assert_eq!(res, gp::in_circle_2d_SOS::<false>(&a2, &b2, &c2, &p2));
 
     // 3D lifted: trivial with zero weights equals insphere
@@ -140,7 +200,7 @@ fn test_orient_2dlifted_and_3dlifted() {
     let d3 = [0.0, 0.0, 1.0];
     let p3 = [0.1, 0.1, 0.1];
     let h3 = 0.0;
-    let res3 = gp::orient_3dlifted_SOS(&a3, &b3, &c3, &d3, &p3, h3, h3, h3, h3, h3);
+    let res3 = gp::orient_3dlifted_SOS(&a3, &b3, &c3, &d3, &p3, h3, h3, h3, h3, h3) as i8;
     assert_eq!(res3, gp::in_sphere_3d_SOS::<false>(&a3, &b3, &c3, &d3, &p3));
     gp::terminate();
 }

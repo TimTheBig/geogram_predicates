@@ -7,6 +7,7 @@
 mod tests;
 
 pub use geogram_ffi::*;
+use nalgebra::Point3;
 use robust::{Coord, Coord3D};
 
 /// Computes the orientation predicate in 3d.
@@ -33,7 +34,7 @@ use robust::{Coord, Coord3D};
 ///
 /// assert_eq!(1, orient_3d(&a, &b, &c, &d));
 ///```
-pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i16 {
+pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i8 {
     let orientation = robust::orient3d(
         unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*a) },
         unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*b) },
@@ -73,7 +74,7 @@ pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i16 
 /// let orientation = orient_2d(&a, &b, &c);
 /// assert_eq!(1, orientation);
 /// ```
-pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i16 {
+pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i8 {
     let orientation = robust::orient2d(
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
@@ -88,6 +89,34 @@ pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i16 {
     }
 }
 
+/// Computes the sign of the dot product between two vectors.
+///
+/// ### Parameters
+/// - `a`, `b`, `c`, three 3d points
+///
+/// ### Returns
+/// - the sign of the dot product between the vectors `ab` and `ac`, true is positive
+///
+/// # Example
+/// ```
+/// use geogram_predicates::dot_3d;
+///
+/// /// // Define four points that form a matrix
+/// let a = [0.0, 0.0, 0.0];
+/// let b = [1.0, 0.0, 0.0];
+/// let c = [0.0, 1.0, 0.0];
+///
+/// let dot_sign = dot_3d(&a, &b, &c); // should be orthogonal
+/// assert_eq!(dot_sign, true);
+/// ```
+pub fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> bool {
+    let ab_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*b);
+    let ab_distance = ab_diff.x.hypot(ab_diff.y).hypot(ab_diff.z);
+    let ac_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*c);
+    let ac_distance = ac_diff.x.hypot(ac_diff.y).hypot(ac_diff.z);
+
+    nalgebra::vector![ab_distance].dot(&nalgebra::vector![ac_distance]) >= 0.0
+}
 
 // todo i think one extra 'i' in the name is ok
 /// Gets the sign of a value.
@@ -113,7 +142,8 @@ pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i16 {
 /// assert_eq!(0, geo_sgn(c));
 ///
 /// ```
-pub fn geo_sgn(x: f64) -> i16 {
+#[inline]
+pub const fn geo_sgn(x: f64) -> i8 {
     if x > 0.0 { 1 } else if x < 0.0 { -1 } else { 0 }
 }
 
@@ -154,7 +184,7 @@ pub fn geo_sgn(x: f64) -> i16 {
 /// # let is_in_circle_p_out = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out);
 /// # assert_eq!(-1, is_in_circle_p_out);
 /// ```
-pub fn in_circle_2d_SOS<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i16 {
+pub fn in_circle_2d_SOS<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i8 {
     let incircle = robust::incircle(
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
         unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
@@ -171,6 +201,76 @@ pub fn in_circle_2d_SOS<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f6
     }
 }
 
+/// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
+///
+/// ### Parameters
+/// - `a`, `b`, `c` the three points that form the matrix
+///
+/// ### Returns
+/// - the sign of the determinant of the matrix
+///
+/// # Example
+/// ```
+/// use geogram_predicates as gp;
+///
+/// // Define three points that form a matrix
+/// let a = [1.0, 2.0, 3.0];
+/// let b = [4.0, 5.0, 6.0];
+/// let c = [7.0, 8.0, 9.0];
+///
+/// let det = gp::det_3d(&a, &b, &c);
+/// assert_eq!(det, 0);
+/// ```
+pub fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i8 {
+    det_3d_filter(a, b, c)
+}
+
+#[inline]
+fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
+    const FPG_UNCERTAIN_VALUE: i8 = 0;
+
+    let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
+    + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
+
+    let max1 = p0[0].abs().max(p1[0].abs()).max(p2[0].abs());
+    let max2 = p0[1].abs().max(p0[2].abs()).max(p1[1].abs()).max(p1[2].abs());
+    let max3 = p1[1].abs().max(p1[2].abs()).max(p2[1].abs()).max(p2[2].abs());
+
+    let mut lower_bound_1 = max1;
+    let mut upper_bound_1 = max1;
+
+    if max2 < lower_bound_1 {
+        lower_bound_1 = max2;
+    }
+    else
+    {
+        if max2 > upper_bound_1 {
+            upper_bound_1 = max2;
+        }
+    }
+    if max3 < lower_bound_1 {
+        lower_bound_1 = max3;
+    } else {
+        if max3 > upper_bound_1 {
+            upper_bound_1 = max3;
+        }
+    }
+
+    if lower_bound_1 < 1.92663387981871579179e-98 || upper_bound_1 > 1.11987237108890185662e+102 {
+        FPG_UNCERTAIN_VALUE
+    } else {
+        let eps = 3.11133555671680765034e-15 * ((max2 * max3) * max1);
+        if delta > eps {
+            1
+        } else {
+            if delta < -eps {
+                -1
+            } else {
+                FPG_UNCERTAIN_VALUE
+            }
+        }
+    }
+}
 
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {
