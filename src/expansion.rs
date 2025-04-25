@@ -67,7 +67,7 @@ impl Expansion {
         &self.data
     }
 
-    pub fn data_mut(&mut self) -> &mut SmallVec<[f64; 2]> {
+    pub const fn data_mut(&mut self) -> &mut SmallVec<[f64; 2]> {
         &mut self.data
     }
 
@@ -191,12 +191,12 @@ pub(crate) enum Sign {
     Positive,
 }
 
-impl Into<i8> for Sign {
-    fn into(self) -> i8 {
-        match self {
-            Self::Positive => 1,
-            Self::Zero => 0,
-            Self::Negative => -1,
+impl From<Sign> for i8 {
+    fn from(sign: Sign) -> i8 {
+        match sign {
+            Sign::Positive => 1,
+            Sign::Zero => 0,
+            Sign::Negative => -1,
         }
     }
 }
@@ -337,9 +337,11 @@ impl Expansion {
     /// Assign to `self` the 3×3 determinant of the nine expansions.
     ///
     /// Computes
+    /// ```txt
     /// a11·det2x2(a22,a23,a32,a33)
     /// − a12·det2x2(a21,a23,a31,a33)
     /// + a13·det2x2(a21,a22,a31,a32)
+    /// ```
     pub fn assign_det3x3(
         &mut self,
         a11: &Expansion, a12: &Expansion, a13: &Expansion,
@@ -434,7 +436,6 @@ impl Expansion {
     }
 
     /// Compute capacity needed to multiply two expansions a and b.
-    /// Mirrors C++: a.length() * b.length() * 2
     pub fn product_capacity(a: &Expansion, b: &Expansion) -> usize {
         a.length().saturating_mul(b.length()).saturating_mul(2)
     }
