@@ -207,7 +207,6 @@ fn test_det_3d() {
     assert_eq!(gp::det_3d(&a, &b, &c), -1);
 }
 
-
 #[test]
 fn test_orient_2dlifted_and_3dlifted() {
     setup();

@@ -22,7 +22,7 @@ fn main() {
             let _ = fs::remove_file("out_robust_orient_2d.png");
             println!("example images removed");
             std::process::exit(1);
-        },
+        }
         "help" | _ => usage(),
     };
 

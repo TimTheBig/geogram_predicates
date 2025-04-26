@@ -6,10 +6,10 @@
 #[cfg(test)]
 mod tests;
 
+use core::cmp::Ordering;
 pub use geogram_ffi::*;
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
-use core::cmp::Ordering;
 
 mod expansion;
 pub use expansion::Expansion;
@@ -18,7 +18,7 @@ pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
 
 /// A helper for functions that return signs
-#[derive(PartialEq, Eq, PartialOrd, Debug, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 #[repr(i8)]
 pub enum Sign {
     Positive = 1,
@@ -29,16 +29,6 @@ pub enum Sign {
 impl From<Sign> for i8 {
     fn from(sign: Sign) -> i8 {
         sign as i8
-    }
-}
-
-impl Ord for Sign {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Sign::Negative, Sign::Negative) | (Sign::Positive, Sign::Positive) | (Sign::Zero, Sign::Zero) => Ordering::Equal,
-            (Sign::Negative, Sign::Zero) | (Sign::Negative, Sign::Positive) | (Sign::Zero, Sign::Positive) => Ordering::Less,
-            (Sign::Positive, Sign::Negative) | (Sign::Positive, Sign::Zero) | (Sign::Zero, Sign::Negative) => Ordering::Greater,
-        }
     }
 }
 
@@ -351,7 +341,7 @@ const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
     const FPG_UNCERTAIN_VALUE: i8 = 0;
 
     let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
-    + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
+        + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
 
     let max1 = p0[0].abs().max(p1[0].abs()).max(p2[0].abs());
     let max2 = p0[1].abs().max(p0[2].abs()).max(p1[1].abs()).max(p1[2].abs());
@@ -362,19 +352,13 @@ const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
 
     if max2 < lower_bound_1 {
         lower_bound_1 = max2;
-    }
-    else
-    {
-        if max2 > upper_bound_1 {
-            upper_bound_1 = max2;
-        }
+    } else if max2 > upper_bound_1 {
+        upper_bound_1 = max2;
     }
     if max3 < lower_bound_1 {
         lower_bound_1 = max3;
-    } else {
-        if max3 > upper_bound_1 {
-            upper_bound_1 = max3;
-        }
+    } else if max3 > upper_bound_1 {
+        upper_bound_1 = max3;
     }
 
     if lower_bound_1 < 1.92663387981871579179e-98 || upper_bound_1 > 1.11987237108890185662e+102 {
@@ -383,12 +367,10 @@ const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
         let eps = 3.11133555671680765034e-15 * ((max2 * max3) * max1);
         if delta > eps {
             1
+        } else if delta < -eps {
+            -1
         } else {
-            if delta < -eps {
-                -1
-            } else {
-                FPG_UNCERTAIN_VALUE
-            }
+            FPG_UNCERTAIN_VALUE
         }
     }
 }

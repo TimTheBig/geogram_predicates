@@ -1,6 +1,6 @@
-use smallvec::SmallVec;
-use core::{cmp::Ordering, fmt};
 use crate::{geo_sign, Sign};
+use core::{cmp::Ordering, fmt};
+use smallvec::SmallVec;
 
 #[derive(Clone)]
 pub struct Expansion {
@@ -30,7 +30,9 @@ macro_rules! expansion {
 
 impl Default for Expansion {
     fn default() -> Self {
-        Self { data: SmallVec::new() }
+        Self {
+            data: SmallVec::new(),
+        }
     }
 }
 
@@ -58,6 +60,12 @@ impl Expansion {
 
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    /// Returns `true` if the vector is empty
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.data.len() == 0
     }
 
     pub fn capacity(&self) -> usize {
@@ -154,7 +162,7 @@ impl Expansion {
     }
 
     fn sign(&self) -> Sign {
-        if self.len() == 0 {
+        if self.is_empty() {
             Sign::Zero
         } else {
             geo_sign(*self.data.last().unwrap())
@@ -249,7 +257,9 @@ impl From<&[f64]> for Expansion {
     /// The resulting expansion has length `slice.len()` and
     /// components equal to the slice elements in order.
     fn from(slice: &[f64]) -> Self {
-        Expansion { data: SmallVec::from_slice(slice) }
+        Expansion {
+            data: SmallVec::from_slice(slice),
+        }
     }
 }
 
@@ -355,35 +365,23 @@ impl Expansion {
         [a31, a32, a33]: [&Expansion; 3],
     ) -> &mut Self {
         // 1) build the three 2×2 minors
-        let mut m11 = Expansion::with_capacity(
-            Self::det2x2_capacity(a22, a23, a32, a33)
-        );
+        let mut m11 = Expansion::with_capacity(Self::det2x2_capacity(a22, a23, a32, a33));
         m11.assign_det2x2(a22, a23, a32, a33);
 
-        let mut m12 = Expansion::with_capacity(
-            Self::det2x2_capacity(a21, a23, a31, a33)
-        );
+        let mut m12 = Expansion::with_capacity(Self::det2x2_capacity(a21, a23, a31, a33));
         m12.assign_det2x2(a21, a23, a31, a33);
 
-        let mut m13 = Expansion::with_capacity(
-            Self::det2x2_capacity(a21, a22, a31, a32)
-        );
+        let mut m13 = Expansion::with_capacity(Self::det2x2_capacity(a21, a22, a31, a32));
         m13.assign_det2x2(a21, a22, a31, a32);
 
         // 2) form the three products
-        let mut t1 = Expansion::with_capacity(
-            Self::product_capacity(a11, &m11)
-        );
+        let mut t1 = Expansion::with_capacity(Self::product_capacity(a11, &m11));
         t1.assign_product(a11, &m11);
 
-        let mut t2 = Expansion::with_capacity(
-            Self::product_capacity(a12, &m12)
-        );
+        let mut t2 = Expansion::with_capacity(Self::product_capacity(a12, &m12));
         t2.assign_product(a12, &m12);
 
-        let mut t3 = Expansion::with_capacity(
-            Self::product_capacity(a13, &m13)
-        );
+        let mut t3 = Expansion::with_capacity(Self::product_capacity(a13, &m13));
         t3.assign_product(a13, &m13);
 
         // 3) combine: (t1 - t2) + t3
@@ -402,7 +400,7 @@ impl Expansion {
     /// ```
     pub fn det2x2_capacity(
         a11: &Expansion, a12: &Expansion,
-        a21: &Expansion, a22: &Expansion
+        a21: &Expansion, a22: &Expansion,
     ) -> usize {
         Self::product_capacity(a11, a22)
             + Self::product_capacity(a21, a12)
@@ -416,18 +414,14 @@ impl Expansion {
     pub fn assign_det2x2(
         &mut self,
         a11: &Expansion, a12: &Expansion,
-        a21: &Expansion, a22: &Expansion
+        a21: &Expansion, a22: &Expansion,
     ) -> &mut Self {
         // build product a11 * a22
-        let mut p1 = Expansion::with_capacity(
-            Self::product_capacity(a11, a22)
-        );
+        let mut p1 = Expansion::with_capacity(Self::product_capacity(a11, a22));
         p1.assign_product(a11, a22);
 
         // build product a12 * a21
-        let mut p2 = Expansion::with_capacity(
-            Self::product_capacity(a12, a21)
-        );
+        let mut p2 = Expansion::with_capacity(Self::product_capacity(a12, a21));
         p2.assign_product(a12, a21);
 
         // self = p1 - p2
