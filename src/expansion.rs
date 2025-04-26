@@ -1,5 +1,6 @@
 use smallvec::SmallVec;
 use core::{cmp::Ordering, fmt};
+use crate::{geo_sign, Sign};
 
 #[derive(Clone)]
 pub struct Expansion {
@@ -182,35 +183,6 @@ impl Expansion {
         let est_self = self.estimate();
         let est_rhs = rhs.estimate();
         geo_sign(est_self - est_rhs)
-    }
-}
-
-/// A helper for functions that return signs
-#[derive(PartialEq, Debug)]
-pub(crate) enum Sign {
-    Negative,
-    Zero,
-    Positive,
-}
-
-impl From<Sign> for i8 {
-    fn from(sign: Sign) -> i8 {
-        match sign {
-            Sign::Positive => 1,
-            Sign::Zero => 0,
-            Sign::Negative => -1,
-        }
-    }
-}
-
-#[inline]
-fn geo_sign(value: f64) -> Sign {
-    if value > 0.0 {
-        Sign::Positive
-    } else if value < 0.0 {
-        Sign::Negative
-    } else {
-        Sign::Zero
     }
 }
 

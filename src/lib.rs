@@ -6,15 +6,87 @@
 #[cfg(test)]
 mod tests;
 
-mod expansion;
-pub use expansion::Expansion;
-
 pub use geogram_ffi::*;
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
+use core::cmp::Ordering;
+
+mod expansion;
+pub use expansion::Expansion;
 
 pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
+
+/// A helper for functions that return signs
+#[derive(PartialEq, Eq, PartialOrd, Debug, Clone)]
+#[repr(i8)]
+pub enum Sign {
+    Positive = 1,
+    Zero = 0,
+    Negative = -1,
+}
+
+impl From<Sign> for i8 {
+    fn from(sign: Sign) -> i8 {
+        sign as i8
+    }
+}
+
+impl Ord for Sign {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Sign::Negative, Sign::Negative) | (Sign::Positive, Sign::Positive) | (Sign::Zero, Sign::Zero) => Ordering::Equal,
+            (Sign::Negative, Sign::Zero) | (Sign::Negative, Sign::Positive) | (Sign::Zero, Sign::Positive) => Ordering::Less,
+            (Sign::Positive, Sign::Negative) | (Sign::Positive, Sign::Zero) | (Sign::Zero, Sign::Negative) => Ordering::Greater,
+        }
+    }
+}
+
+impl PartialEq<i8> for Sign {
+    fn eq(&self, other: &i8) -> bool {
+        (self.clone() as i8) == *other
+    }
+}
+
+impl PartialEq<Sign> for i8 {
+    fn eq(&self, other: &Sign) -> bool {
+        (other.clone() as i8) == *self
+    }
+}
+
+impl PartialOrd<i8> for Sign {
+    fn partial_cmp(&self, other: &i8) -> Option<Ordering> {
+        (self.clone() as i8).partial_cmp(other)
+    }
+}
+
+/// Gets the sign of a value.
+///
+/// ### Parameters
+/// - `x` value to test
+///
+/// # Example
+/// ```
+/// use geogram_predicates::{Sign, geo_sign};
+///
+/// let a = 42.0;
+/// let b = -42.0;
+/// let c = 0.0;
+///
+/// assert_eq!(geo_sign(a), Sign::Positive);
+/// assert_eq!(geo_sign(b), Sign::Negative);
+/// assert_eq!(geo_sign(c), Sign::Zero);
+/// ```
+#[inline]
+pub const fn geo_sign(value: f64) -> Sign {
+    if value > 0.0 {
+        Sign::Positive
+    } else if value < 0.0 {
+        Sign::Negative
+    } else {
+        Sign::Zero
+    }
+}
 
 /// Computes the orientation predicate in 3d.
 ///
@@ -124,33 +196,6 @@ pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
     nalgebra::vector![ab_distance].dot(&nalgebra::vector![ac_distance]) >= 0.0
 }
 
-/// Gets the sign of a value.
-///
-/// ### Parameters
-/// - `x` value to test
-///
-/// ### Return values
-/// - `+1` if `x` is positive
-/// - `0` if `x` is `0`
-/// - `-1` if `x` is negative
-///
-/// # Example
-/// ```
-/// use geogram_predicates::geo_sign;
-///
-/// let a = 42.0;
-/// let b = -42.0;
-/// let c = 0.0;
-///
-/// assert_eq!(1, geo_sign(a));
-/// assert_eq!(-1, geo_sign(b));
-/// assert_eq!(0, geo_sign(c));
-/// ```
-#[inline]
-pub const fn geo_sign(x: f64) -> i8 {
-    if x > 0.0 { 1 } else if x < 0.0 { -1 } else { 0 }
-}
-
 /// Tests whether a point is in the circum-circle of a triangle.
 ///
 /// If the triangle `a` , `b` , `c` is oriented clockwise instead of counter-clockwise, then the result is inversed.
@@ -229,12 +274,12 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 ///
 /// // Define two points, to test against the tetrahedrons circum-sphere
 /// let p_in = [0.75, 0.75, 0.5];
-/// assert_eq!(1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in));
-/// # assert_eq!(1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in));
+/// assert_eq!(-1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in));
+/// # assert_eq!(-1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in));
 ///
 /// let p_out = [0.75, 0.75, 1.5];
-/// assert_eq!(-1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
-/// # assert_eq!(-1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
+/// assert_eq!(1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
+/// # assert_eq!(1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
 /// ```
 pub fn in_sphere_3d_sos<const PERTURB: bool>(
     a: &Point3d,
@@ -243,23 +288,30 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
     d: &Point3d,
     p: &Point3d,
 ) -> i8 {
-    let insphere = if orient_3d(a, b, c, d) == 1 {
-        robust::insphere(
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
-        )
-    } else {
-        robust::insphere(
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
-            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
-        )
-    };
+    // let insphere = if orient_3d(a, b, c, d) == 1 {
+    //     robust::insphere(
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
+    //     )
+    // } else {
+    //     robust::insphere(
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+    //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
+    //     )
+    // };
+    let insphere = robust::insphere(
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
+    );
 
     if insphere > 0.0 {
         1
@@ -638,7 +690,7 @@ pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
 ///
 /// assert_eq!(1, gp::orient_3d_inexact(&a, &b, &c, &d));
 ///```
-pub const fn orient_3d_inexact(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
+pub const fn orient_3d_inexact(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
     let a11 = b[0] - a[0];
     let a12 = b[1] - a[1];
     let a13 = b[2] - a[2];

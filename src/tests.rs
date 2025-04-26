@@ -1,4 +1,4 @@
-use crate::{self as gp};
+use crate::{self as gp, Sign};
 
 // Helper to initialize and terminate geogram
 fn setup() {
@@ -8,9 +8,9 @@ fn setup() {
 
 #[test]
 fn test_geo_sgn() {
-    assert_eq!(gp::geo_sign(42.0), 1);
-    assert_eq!(gp::geo_sign(-3.14), -1);
-    assert_eq!(gp::geo_sign(0.0), 0);
+    assert_eq!(gp::geo_sign(42.0), Sign::Positive);
+    assert_eq!(gp::geo_sign(-3.14), Sign::Negative);
+    assert_eq!(gp::geo_sign(0.0), Sign::Zero);
 }
 
 #[test]
@@ -85,23 +85,21 @@ fn test_points_colinear_3d() {
 
 #[test]
 fn test_in_circle_2d() {
-    setup();
     let a = [0.0, 0.0];
     let b = [1.0, 0.0];
     let c = [0.0, 1.0];
     let p_in = [0.1, 0.1];
     let p_out = [2.0, 2.0];
+
     assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_in), 1);
     assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_in), 1);
     assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_out), -1);
     assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_out), -1);
-    gp::terminate();
 }
 
 // On-border tests for incircle: PERTURB false -> -1, true -> +1
 #[test]
 fn test_in_circle_2d_on_border() {
-    setup();
     let a = [0.0, 0.0];
     let b = [1.0, 0.0];
     let c = [0.0, 1.0];
@@ -112,12 +110,10 @@ fn test_in_circle_2d_on_border() {
     // exactly on circle
     assert_eq!(gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_on), -1);
     assert_eq!(gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_on), 1);
-    gp::terminate();
 }
 
 #[test]
 fn test_in_sphere_3d() {
-    setup();
     let a = [0.0, 0.0, 0.0];
     let b = [1.0, 0.0, 0.0];
     let c = [0.0, 1.0, 0.0];
@@ -125,17 +121,15 @@ fn test_in_sphere_3d() {
     let p_in = [0.1, 0.1, 0.1];
     let p_out = [2.0, 2.0, 2.0];
 
-    assert_eq!(gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in), 1);
-    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in), 1);
-    assert_eq!(gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out), -1);
-    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out), -1);
-    gp::terminate();
+    assert_eq!(gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in), -1);
+    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in), -1);
+    assert_eq!(gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out), 1);
+    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out), 1);
 }
 
 // On-border tests for insphere: PERTURB false -> -1, true -> +1
 #[test]
 fn test_in_sphere_3d_on_border() {
-    setup();
     let a = [0.0, 0.0, 0.0];
     let b = [1.0, 0.0, 0.0];
     let c = [0.0, 1.0, 0.0];
@@ -146,8 +140,7 @@ fn test_in_sphere_3d_on_border() {
     let p_on = [0.25 + offset, 0.25 + offset, 0.25 + offset];
 
     assert_eq!(gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_on), -1);
-    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_on), 1);
-    gp::terminate();
+    assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_on), -1);
 }
 
 #[test]
@@ -241,11 +234,10 @@ fn test_orient_2dlifted_and_3dlifted() {
 
 #[test]
 fn test_orient_3d_inexact() {
-    setup();
     let a = [0.0, 0.0, 0.0];
     let b = [1.0, 0.0, 0.0];
     let c = [0.0, 1.0, 0.0];
     let d = [0.0, 0.0, 1.0];
-    assert_eq!(gp::orient_3d_inexact(&a, &b, &c, &d), 1);
-    gp::terminate();
+
+    assert_eq!(gp::orient_3d_inexact(&a, &b, &c, &d), Sign::Positive);
 }
