@@ -7,11 +7,14 @@
 mod tests;
 
 mod expansion;
-use expansion::Expansion;
+pub use expansion::Expansion;
 
 pub use geogram_ffi::*;
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
+
+pub type Point3d = [f64; 3];
+pub type Point2d = [f64; 2];
 
 /// Computes the orientation predicate in 3d.
 ///
@@ -37,12 +40,12 @@ use robust::{Coord, Coord3D};
 ///
 /// assert_eq!(1, orient_3d(&a, &b, &c, &d));
 ///```
-pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i8 {
+pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
     let orientation = robust::orient3d(
-        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*a) },
-        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*b) },
-        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*c) },
-        unsafe { core::mem::transmute::<[f64; 3], Coord3D<f64>>(*d) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+        unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
     );
     if orientation > 0.0 {
         -1
@@ -77,11 +80,11 @@ pub fn orient_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i8 {
 /// let orientation = orient_2d(&a, &b, &c);
 /// assert_eq!(1, orientation);
 /// ```
-pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i8 {
+pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> i8 {
     let orientation = robust::orient2d(
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*c) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*b) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*c) },
     );
     if orientation > 0.0 {
         1
@@ -104,7 +107,7 @@ pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i8 {
 /// ```
 /// use geogram_predicates::dot_3d;
 ///
-/// /// // Define four points that form a matrix
+/// // Define four points that form a matrix
 /// let a = [0.0, 0.0, 0.0];
 /// let b = [1.0, 0.0, 0.0];
 /// let c = [0.0, 1.0, 0.0];
@@ -112,7 +115,7 @@ pub fn orient_2d(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2]) -> i8 {
 /// let dot_sign = dot_3d(&a, &b, &c); // should be orthogonal
 /// assert_eq!(dot_sign, true);
 /// ```
-pub fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> bool {
+pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
     let ab_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*b);
     let ab_distance = ab_diff.x.hypot(ab_diff.y).hypot(ab_diff.z);
     let ac_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*c);
@@ -121,7 +124,6 @@ pub fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> bool {
     nalgebra::vector![ab_distance].dot(&nalgebra::vector![ac_distance]) >= 0.0
 }
 
-// todo i think one extra 'i' in the name is ok
 /// Gets the sign of a value.
 ///
 /// ### Parameters
@@ -134,19 +136,18 @@ pub fn dot_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> bool {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::geo_sgn;
+/// use geogram_predicates::geo_sign;
 ///
 /// let a = 42.0;
 /// let b = -42.0;
 /// let c = 0.0;
 ///
-/// assert_eq!(1, geo_sgn(a));
-/// assert_eq!(-1, geo_sgn(b));
-/// assert_eq!(0, geo_sgn(c));
-///
+/// assert_eq!(1, geo_sign(a));
+/// assert_eq!(-1, geo_sign(b));
+/// assert_eq!(0, geo_sign(c));
 /// ```
 #[inline]
-pub const fn geo_sgn(x: f64) -> i8 {
+pub const fn geo_sign(x: f64) -> i8 {
     if x > 0.0 { 1 } else if x < 0.0 { -1 } else { 0 }
 }
 
@@ -177,22 +178,22 @@ pub const fn geo_sgn(x: f64) -> i8 {
 /// let p_in = [1.0, -0.4];
 /// let p_out = [1.0, -1.2];
 ///
-/// let is_in_circle_p_in = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_in);
+/// let is_in_circle_p_in = gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_in);
 /// assert_eq!(1, is_in_circle_p_in);
-/// # let is_in_circle_p_in = gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_in);
+/// # let is_in_circle_p_in = gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_in);
 /// # assert_eq!(1, is_in_circle_p_in);
 ///
-/// let is_in_circle_p_out = gp::in_circle_2d_SOS::<true>(&a, &b, &c, &p_out);
+/// let is_in_circle_p_out = gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_out);
 /// assert_eq!(-1, is_in_circle_p_out);
-/// # let is_in_circle_p_out = gp::in_circle_2d_SOS::<false>(&a, &b, &c, &p_out);
+/// # let is_in_circle_p_out = gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_out);
 /// # assert_eq!(-1, is_in_circle_p_out);
 /// ```
-pub fn in_circle_2d_sos<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f64; 2], p: &[f64; 2]) -> i8 {
+pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point2d, p: &Point2d) -> i8 {
     let incircle = robust::incircle(
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*a) },
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*b) },
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*c) },
-        unsafe { core::mem::transmute::<[f64; 2], Coord<f64>>(*p) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*b) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*c) },
+        unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*p) },
     );
 
     if incircle > 0.0 {
@@ -224,12 +225,12 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &[f64; 2], b: &[f64; 2], c: &[f6
 /// let det = gp::det_3d(&a, &b, &c);
 /// assert_eq!(det, 0);
 /// ```
-pub fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i8 {
+pub const fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
     det_3d_filter(a, b, c)
 }
 
 #[inline]
-const fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
+const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
     const FPG_UNCERTAIN_VALUE: i8 = 0;
 
     let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
@@ -283,7 +284,7 @@ const fn det_3d_filter(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
 ///
 /// ### Returns
 /// The sign of the determinant of the matrix.
-// fn det_3d_exact(p0: &[f64; 3], p1: &[f64; 3], p2: &[f64; 3]) -> i8 {
+// fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
 //     let p0_0 = Expansion::from(p0[0]);
 //     let p0_1 = Expansion::from(p0[1]);
 //     let p0_2 = Expansion::from(p0[2]);
@@ -317,28 +318,6 @@ mod geogram_ffi {
     unsafe extern "C++" {
         include!("geogram_predicates/include/geogram_ffi.h");
 
-        /// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c` the three points that form the matrix
-        ///
-        /// ### Returns
-        /// - the sign of the determinant of the matrix
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define three points that form a matrix
-        /// let a = [1.0, 2.0, 3.0];
-        /// let b = [4.0, 5.0, 6.0];
-        /// let c = [7.0, 8.0, 9.0];
-        ///
-        /// let det = gp::det_3d(&a, &b, &c);
-        /// assert_eq!(det, 0);
-        /// ```
-        // fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
-
         /// Computes the sign of the determinant of a 4x4 matrix formed by four 4D points.
         ///
         /// ### Parameters
@@ -361,44 +340,6 @@ mod geogram_ffi {
         /// assert_eq!(det, 0);
         /// ```
         fn det_4d(a: &[f64; 4], b: &[f64; 4], c: &[f64; 4], d: &[f64; 4]) -> i16;
-
-
-
-        /// Tests whether a point is in the circum-sphere of a tetrahedron.
-        ///
-        /// ### Parameters
-        /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
-        /// - `p` point to test
-        ///
-        /// ### Return values
-        /// * `+1` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
-        /// * `-1` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
-        /// * `perturb()` - if `p` is exactly on the circum-sphere of the tetrahedron `a`, `b`, `c`, `d`, where `perturb()` denotes a globally consistent perturbation, that returns either `+1` or `-1`
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define four points that form a tetrahedron
-        /// let a = [0.0, 0.0, 0.0];
-        /// let b = [2.0, 0.0, 0.0];
-        /// let c = [0.0, 2.0, 0.0];
-        /// let d = [0.75, 0.75, 1.0];
-        ///
-        /// // Define two points, to test against the tetrahedrons circum-sphere
-        /// let p_in = [0.75, 0.75, 0.5];
-        /// assert_eq!(1, gp::in_sphere_3d_SOS(&a, &b, &c, &d, &p_in));
-        ///
-        /// let p_out = [0.75, 0.75, 1.5];
-        /// assert_eq!(-1, gp::in_sphere_3d_SOS(&a, &b, &c, &d, &p_out));
-        /// ```
-        fn in_sphere_3d_SOS(
-            a: &[f64; 3],
-            b: &[f64; 3],
-            c: &[f64; 3],
-            d: &[f64; 3],
-            p: &[f64; 3],
-        ) -> i16;
 
         /// Needs to be called before using any predicate.
         fn initialize();
@@ -451,7 +392,6 @@ mod geogram_ffi {
         ///
         /// let orientation_above = gp::orient_2dlifted_SOS(&a, &b, &c, &p_above, h_a, h_b, h_c, h_p_above);
         /// assert_eq!(-1, orientation_above);
-        ///
         /// ```
         #[allow(clippy::too_many_arguments)]
         fn orient_2dlifted_SOS(
@@ -582,7 +522,7 @@ mod geogram_ffi {
 ///
 /// assert!(points_are_identical_2d(&p1, &p2));
 /// ```
-pub const fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
+pub const fn points_are_identical_2d(p1: &Point2d, p2: &Point2d) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1]
 }
 
@@ -605,7 +545,7 @@ pub const fn points_are_identical_2d(p1: &[f64; 2], p2: &[f64; 2]) -> bool {
 ///
 /// assert!(points_are_identical_3d(&p1, &p2));
 /// ```
-pub const fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool {
+pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]
 }
 
@@ -633,23 +573,18 @@ pub const fn points_are_identical_3d(p1: &[f64; 3], p2: &[f64; 3]) -> bool {
 ///
 /// assert_eq!(1, gp::orient_3d_inexact(&a, &b, &c, &d));
 ///```
-pub const fn orient_3d_inexact(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f64; 3]) -> i8 {
-    let p0 = a;
-    let p1 = b;
-    let p2 = c;
-    let p3 = d;
+pub const fn orient_3d_inexact(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
+    let a11 = b[0] - a[0];
+    let a12 = b[1] - a[1];
+    let a13 = b[2] - a[2];
 
-    let a11 = p1[0] - p0[0];
-    let a12 = p1[1] - p0[1];
-    let a13 = p1[2] - p0[2];
+    let a21 = c[0] - a[0];
+    let a22 = c[1] - a[1];
+    let a23 = c[2] - a[2];
 
-    let a21 = p2[0] - p0[0];
-    let a22 = p2[1] - p0[1];
-    let a23 = p2[2] - p0[2];
-
-    let a31 = p3[0] - p0[0];
-    let a32 = p3[1] - p0[1];
-    let a33 = p3[2] - p0[2];
+    let a31 = d[0] - a[0];
+    let a32 = d[1] - a[1];
+    let a33 = d[2] - a[2];
 
     let delta =  det3x3(
         [a11, a12, a13],
@@ -657,15 +592,15 @@ pub const fn orient_3d_inexact(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3], d: &[f6
         [a31, a32, a33],
     );
 
-    geo_sgn(delta)
+    geo_sign(delta)
 }
 
 /// Computes the determinant of a 3x3 matrix given by coefficients.
 #[inline]
 const fn det3x3(
-    [a00, a01, a02]: [f64; 3],
-    [a10, a11, a12]: [f64; 3],
-    [a20, a21, a22]: [f64; 3],
+    [a00, a01, a02]: Point3d,
+    [a10, a11, a12]: Point3d,
+    [a20, a21, a22]: Point3d,
 ) -> f64 {
     let m01 = a00 * a11 - a10 * a01;
     let m02 = a00 * a21 - a20 * a01;

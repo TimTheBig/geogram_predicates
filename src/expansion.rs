@@ -9,11 +9,11 @@ pub struct Expansion {
 
 /// Build an `Expansion` from a comma-separated list of `f64` literals or expressions.
 ///
-/// ```rust
-/// # use your_crate::Expansion;
+/// ```
+/// # use geogram_predicates::expansion;
 /// let e = expansion![1.0, 2.5, 3.75];
 /// assert_eq!(e.length(), 3);
-/// assert_eq!(&e[..], &[1.0, 2.5, 3.75]);
+/// assert_eq!(&e.data(), &[1.0, 2.5, 3.75]);
 /// ```
 #[macro_export]
 macro_rules! expansion {
@@ -36,22 +36,22 @@ impl Default for Expansion {
 impl Expansion {
     /// Create a new `Expansion` with the given capacity.
     ///
-    /// Internally uses a `SmallVec<[f64;2]>` so small expansions
+    /// Internally uses a `SmallVec<[f64; 2]>` so small expansions
     /// are stored inline; larger ones spill to the heap.
     ///
-    /// # Parameters
+    /// ## Parameters
     /// - `capacity`: maximum number of components (not including
     ///   the extra sentry slot).
     ///
-    /// # Examples
+    /// ## Examples
     /// ```
+    /// # use geogram_predicates::Expansion;
     /// let e = Expansion::with_capacity(5);
     /// assert_eq!(e.capacity(), 5);
     /// assert_eq!(e.length(), 0);
     /// ```
     pub fn with_capacity(capacity: usize) -> Self {
-        let mut data = SmallVec::with_capacity(capacity + 1);
-        data.resize(capacity + 1, 0.0);
+        let data = SmallVec::with_capacity(capacity);
         Self { data }
     }
 
@@ -85,8 +85,9 @@ impl Expansion {
     ///
     /// After this call, `self.length() == 1` and `self[0] == a`.
     ///
-    /// # Examples
+    /// ## Examples
     /// ```
+    /// # use geogram_predicates::Expansion;
     /// let mut e = Expansion::with_capacity(2);
     /// e.assign(3.14);
     /// assert_eq!(e.length(), 1);
@@ -116,11 +117,12 @@ impl Expansion {
 
     /// Negate every component of the expansion in place.
     ///
-    /// # Examples
+    /// ## Examples
     /// ```
+    /// # use geogram_predicates::Expansion;
     /// let mut e = Expansion::from(2.0);
-    /// let f = -e.clone();
-    /// assert_eq!(f[0], -2.0);
+    /// e.negate();
+    /// assert_eq!(e[0], -2.0);
     /// ```
     pub fn negate(&mut self) -> &mut Self {
         for v in self.data.iter_mut() {
@@ -140,22 +142,21 @@ impl Expansion {
     ///
     /// This gives a quick—and not fully accurate—“approximate” value.
     ///
-    /// # Examples
+    /// ## Examples
     /// ```
-    /// let mut e = Expansion::with_capacity(3);
-    /// e.assign(1.0);
-    /// e.data_mut()[1] = 0.0000001;
+    /// # use geogram_predicates::expansion;
+    /// let mut e = expansion![1.0, 0.0000001];
     /// assert!(e.estimate() > 1.0);
     /// ```
     pub fn estimate(&self) -> f64 {
         self.data.iter().sum()
     }
 
-    pub fn sign(&self) -> Sign {
+    fn sign(&self) -> Sign {
         if self.len() == 0 {
             Sign::Zero
         } else {
-            geo_sgn(*self.data.last().unwrap())
+            geo_sign(*self.data.last().unwrap())
         }
     }
 
@@ -170,8 +171,9 @@ impl Expansion {
     /// - `Ordering::Equal` if they are (approximately) equal,
     /// - `Ordering::Greater` otherwise.
     ///
-    /// # Examples
+    /// ## Examples
     /// ```
+    /// # use geogram_predicates::Expansion;
     /// let a = Expansion::from(1.0);
     /// let b = Expansion::from(2.0);
     /// assert!(a < b);
@@ -179,11 +181,11 @@ impl Expansion {
     pub fn compare(&self, rhs: &Expansion) -> Sign {
         let est_self = self.estimate();
         let est_rhs = rhs.estimate();
-        geo_sgn(est_self - est_rhs)
+        geo_sign(est_self - est_rhs)
     }
 }
 
-// Helper for sign handling
+/// A helper for functions that return signs
 #[derive(PartialEq, Debug)]
 pub(crate) enum Sign {
     Negative,
@@ -201,7 +203,8 @@ impl From<Sign> for i8 {
     }
 }
 
-fn geo_sgn(value: f64) -> Sign {
+#[inline]
+fn geo_sign(value: f64) -> Sign {
     if value > 0.0 {
         Sign::Positive
     } else if value < 0.0 {
@@ -215,7 +218,7 @@ impl fmt::Debug for Expansion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Expansion[{}] = [", self.len())?;
         for x in &self.data {
-            write!(f, "{} ", x)?;
+            write!(f, "{x} ")?;
         }
         write!(f, "]")
     }
@@ -280,15 +283,46 @@ impl From<&[f64]> for Expansion {
 
 /// Compute the 3×3 determinant of nine `Expansion`s, returning a new `Expansion`.
 ///  
-/// This mirrors the C++ macro:
-/// `expansion_det3x3(a11, …, a33)` →
-/// `new_expansion_on_stack(det3x3_capacity(...))->assign_det3x3(...)`  
-#[macro_export]
+/// ```ignore
+/// # use geogram_predicates::expansion_det3x3;
+/// expansion_det3x3!(
+///     a, b, c,
+///     d, e, f,
+///     g, h, i,
+/// )
+/// // or
+/// expansion_det3x3!(
+///     [a, b, c],
+///     [d, e, f],
+///     [g, h, i],
+/// )
+/// ```
 macro_rules! expansion_det3x3 {
     (
         $a11:expr, $a12:expr, $a13:expr,
         $a21:expr, $a22:expr, $a23:expr,
-        $a31:expr, $a32:expr, $a33:expr
+        $a31:expr, $a32:expr, $a33:expr$(,)?
+    ) => {{
+        // Compute exactly the capacity needed
+        let cap = $crate::Expansion::det3x3_capacity(
+            &$a11, &$a12, &$a13,
+            &$a21, &$a22, &$a23,
+            &$a31, &$a32, &$a33
+        );
+        // Allocate an Expansion with that capacity
+        let mut e = $crate::Expansion::with_capacity(cap);
+        // Perform the determinant assignment
+        e.assign_det3x3(
+            &$a11, &$a12, &$a13,
+            &$a21, &$a22, &$a23,
+            &$a31, &$a32, &$a33
+        );
+        e
+    }};
+    (
+        [$a11:expr, $a12:expr, $a13:expr],
+        [$a21:expr, $a22:expr, $a23:expr],
+        [$a31:expr, $a32:expr, $a33:expr]$(,)?
     ) => {{
         // Compute exactly the capacity needed
         let cap = $crate::Expansion::det3x3_capacity(
@@ -313,16 +347,16 @@ impl Expansion {
     /// of the nine expansions a11…a33.
     ///
     /// Mirrors C++:
-    /// ```
+    /// ```cpp
     /// index_t c11 = det2x2_capacity(a22,a23,a32,a33);
     /// index_t c12 = det2x2_capacity(a21,a23,a31,a33);
     /// index_t c13 = det2x2_capacity(a21,a22,a31,a32);
-    /// return 2*(a11.len()*c11 + a12.len()*c12 + a13.len()*c13);
+    /// return 2 * (a11.len()*c11 + a12.len()*c12 + a13.len()*c13);
     /// ```
-    pub fn det3x3_capacity(
-        a11: &Expansion, a12: &Expansion, a13: &Expansion,
-        a21: &Expansion, a22: &Expansion, a23: &Expansion,
-        a31: &Expansion, a32: &Expansion, a33: &Expansion
+    pub(crate) fn det3x3_capacity(
+        [a11, a12, a13]: [&Expansion; 3],
+        [a21, a22, a23]: [&Expansion; 3],
+        [a31, a32, a33]: [&Expansion; 3],
     ) -> usize {
         let c11 = Self::det2x2_capacity(a22, a23, a32, a33);
         let c12 = Self::det2x2_capacity(a21, a23, a31, a33);
@@ -344,9 +378,9 @@ impl Expansion {
     /// ```
     pub fn assign_det3x3(
         &mut self,
-        a11: &Expansion, a12: &Expansion, a13: &Expansion,
-        a21: &Expansion, a22: &Expansion, a23: &Expansion,
-        a31: &Expansion, a32: &Expansion, a33: &Expansion
+        [a11, a12, a13]: [&Expansion; 3],
+        [a21, a22, a23]: [&Expansion; 3],
+        [a31, a32, a33]: [&Expansion; 3],
     ) -> &mut Self {
         // 1) build the three 2×2 minors
         let mut m11 = Expansion::with_capacity(
@@ -405,7 +439,7 @@ impl Expansion {
     /// Assign to `self` the 2×2 determinant of the four expansions:
     ///     a11·a22 − a12·a21
     ///
-    /// # Panics
+    /// ## Panics
     /// Panics if `self.capacity()` is less than `det2x2_capacity(...)`.
     pub fn assign_det2x2(
         &mut self,
@@ -469,6 +503,7 @@ impl Expansion {
     pub fn assign_product(&mut self, a: &Expansion, b: &Expansion) -> &mut Self {
         let cap = Self::product_capacity(a, b);
         assert!(cap <= self.capacity(), "assign_product: capacity too small");
+
         let mut idx = 0;
         // for each pair (i,j), compute two_product and write low,high
         for &ai in a.data.iter().take(a.length()) {
