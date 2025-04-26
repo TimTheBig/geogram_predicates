@@ -248,8 +248,8 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 /// - `PERTURB` (const) - what it should be if `p` is exactly on the circum-sphere, true is `+1`, false is `-1`
 ///
 /// ### Return values
-/// * `+1` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
-/// * `-1` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `-1` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `+1` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
 /// * `PERTURB` - if `p` is exactly on the circum-sphere of the tetrahedron `a`, `b`, `c`, `d`, where `perturb()` denotes a consistent perturbation, that returns either `+1` or `-1`
 ///
 /// # Example
@@ -332,8 +332,14 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 /// let det = gp::det_3d(&a, &b, &c);
 /// assert_eq!(det, 0);
 /// ```
-pub const fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
-    det_3d_filter(a, b, c)
+pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
+    let res = det_3d_filter(a, b, c);
+    // FIXME: this breaks tests but it's what geogram does
+    if res == 0 {
+        det_3d_exact(a, b, c)
+    } else {
+        res
+    }
 }
 
 #[inline]
@@ -383,27 +389,27 @@ const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
 ///
 /// ### Returns
 /// The sign of the determinant of the matrix.
-// fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
-//     let p0_0 = Expansion::from(p0[0]);
-//     let p0_1 = Expansion::from(p0[1]);
-//     let p0_2 = Expansion::from(p0[2]);
+fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
+    let p0_0 = Expansion::from(p0[0]);
+    let p0_1 = Expansion::from(p0[1]);
+    let p0_2 = Expansion::from(p0[2]);
 
-//     let p1_0 = Expansion::from(p1[0]);
-//     let p1_1 = Expansion::from(p1[1]);
-//     let p1_2 = Expansion::from(p1[2]);
+    let p1_0 = Expansion::from(p1[0]);
+    let p1_1 = Expansion::from(p1[1]);
+    let p1_2 = Expansion::from(p1[2]);
 
-//     let p2_0 = Expansion::from(p2[0]);
-//     let p2_1 = Expansion::from(p2[1]);
-//     let p2_2 = Expansion::from(p2[2]);
+    let p2_0 = Expansion::from(p2[0]);
+    let p2_1 = Expansion::from(p2[1]);
+    let p2_2 = Expansion::from(p2[2]);
 
-//     let Delta = expansion_det3x3!(
-//         p0_0, p0_1, p0_2,
-//         p1_0, p1_1, p1_2,
-//         p2_0, p2_1, p2_2
-//     );
+    let delta = crate::expansion::expansion_det3x3!(
+        p0_0, p0_1, p0_2,
+        p1_0, p1_1, p1_2,
+        p2_0, p2_1, p2_2
+    );
 
-//     return Delta.sign().into();
-// }
+    delta.sign().into()
+}
 
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {

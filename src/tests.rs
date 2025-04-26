@@ -145,12 +145,12 @@ fn test_in_sphere_3d_on_border() {
 
 #[test]
 fn test_det_3d_and_4d() {
-    setup();
     let a3 = [1.0, 2.0, 3.0];
     let b3 = [4.0, 5.0, 6.0];
     let c3 = [7.0, 8.0, 9.0];
     assert_eq!(gp::det_3d(&a3, &b3, &c3), 0);
 
+    setup();
     let a4 = [1.0, 2.0, 3.0, 4.0];
     let b4 = [5.0, 6.0, 7.0, 8.0];
     let c4 = [9.0, 10.0, 11.0, 12.0];
