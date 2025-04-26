@@ -576,36 +576,49 @@ mod geogram_ffi {
             h_p: f64,
         ) -> i16;
 
-        /// Tests whether three 3D points are colinear.
-        ///
-        /// ### Parameters
-        /// - `p1` first point
-        /// - `p2` second point
-        /// - `p3` third point
-        ///
-        /// ### Return values
-        /// - `true` - if `p1`, `p2` and `p3` are colinear
-        /// - `false` - otherwise
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define three points on a line
-        /// let p1 = [0.0, 0.0, 0.0];
-        /// let p2 = [0.0, 0.0, 1.0];
-        /// let p3 = [0.0, 0.0, 2.0];
-        ///
-        /// assert!(gp::points_are_colinear_3d(&p1, &p2, &p3));
-        /// ```
-        fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool;
-
         /// Displays some statistics about predicates, including the number of calls, the number of exact arithmetics calls, and the number of Simulation of Simplicity calls.
         fn show_stats();
 
         /// Needs to be called at the end of the program.
         fn terminate();
     }
+}
+
+/// Tests whether three 3D points are colinear.
+///
+/// ### Parameters
+/// - `p1` first point
+/// - `p2` second point
+/// - `p3` third point
+///
+/// ### Return values
+/// - `true` - if `p1`, `p2` and `p3` are colinear
+/// - `false` - otherwise
+///
+/// # Example
+/// ```
+/// use geogram_predicates as gp;
+///
+/// // Define three points on a line
+/// let p1 = [0.0, 0.0, 0.0];
+/// let p2 = [0.0, 0.0, 1.0];
+/// let p3 = [0.0, 0.0, 2.0];
+///
+/// assert!(gp::points_are_colinear_3d(&p1, &p2, &p3));
+/// ```
+pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool {
+    // Colinearity is tested by using four coplanarity
+    // tests with four points that are not coplanar.
+    // TODO: use PCK::aligned_3d() instead (to be tested)
+    const Q000: [f64; 3] = [0.0, 0.0, 0.0];
+    const Q001: [f64; 3] = [0.0, 0.0, 1.0];
+    const Q010: [f64; 3] = [0.0, 1.0, 0.0];
+    const Q100: [f64; 3] = [1.0, 0.0, 0.0];
+
+    orient_3d(p1, p2, p3, &Q000) == 0 &&
+    orient_3d(p1, p2, p3, &Q001) == 0 &&
+    orient_3d(p1, p2, p3, &Q010) == 0 &&
+    orient_3d(p1, p2, p3, &Q100) == 0
 }
 
 /// Tests whether two 2d points are identical.
