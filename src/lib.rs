@@ -205,6 +205,71 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
     }
 }
 
+/// Tests whether a point is in the circum-sphere of a tetrahedron.
+///
+/// ### Parameters
+/// - `a`, `b`, `c`, `d` vertices of the tetrahedron
+/// - `p` point to test
+/// - `PERTURB` (const) - what it should be if `p` is exactly on the circum-sphere, true is `+1`, false is `-1`
+///
+/// ### Return values
+/// * `+1` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `-1` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `PERTURB` - if `p` is exactly on the circum-sphere of the tetrahedron `a`, `b`, `c`, `d`, where `perturb()` denotes a consistent perturbation, that returns either `+1` or `-1`
+///
+/// # Example
+/// ```
+/// use geogram_predicates as gp;
+///
+/// // Define four points that form a tetrahedron
+/// let a = [0.0, 0.0, 0.0];
+/// let b = [2.0, 0.0, 0.0];
+/// let c = [0.0, 2.0, 0.0];
+/// let d = [0.75, 0.75, 1.0];
+///
+/// // Define two points, to test against the tetrahedrons circum-sphere
+/// let p_in = [0.75, 0.75, 0.5];
+/// assert_eq!(1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in));
+/// # assert_eq!(1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in));
+///
+/// let p_out = [0.75, 0.75, 1.5];
+/// assert_eq!(-1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
+/// # assert_eq!(-1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
+/// ```
+pub fn in_sphere_3d_sos<const PERTURB: bool>(
+    a: &Point3d,
+    b: &Point3d,
+    c: &Point3d,
+    d: &Point3d,
+    p: &Point3d,
+) -> i8 {
+    let insphere = if orient_3d(a, b, c, d) == 1 {
+        robust::insphere(
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
+        )
+    } else {
+        robust::insphere(
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
+            unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
+        )
+    };
+
+    if insphere > 0.0 {
+        1
+    } else if insphere < 0.0 {
+        -1
+    } else {
+        const { if PERTURB { 1 } else { -1 } }
+    }
+}
+
 /// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
 ///
 /// ### Parameters
