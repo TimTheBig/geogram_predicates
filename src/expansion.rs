@@ -128,6 +128,20 @@ macro_rules! expansion_det3x3 {
     }};
 }
 
+/// Compute the 2×2 determinant of four `Expansion`s, returning a new `Expansion`.
+///  
+/// ```ignore
+/// # use geogram_predicates::expansion_det2x2;
+/// expansion_det2x2!(
+///     a, b,
+///     c, d,
+/// )
+/// // or
+/// expansion_det2x2!(
+///     [a, b],
+///     [c, d],
+/// )
+/// ```
 macro_rules! expansion_det2x2 {
     (
         $a11:expr, $a12:expr,
@@ -207,18 +221,20 @@ impl Default for Expansion {
 impl Expansion {
     /// Create a new `Expansion` with the given capacity.
     ///
-    /// Internally uses a `SmallVec<[f64; 2]>` so small expansions
+    /// Internally uses a `SmallVec<[f64; 9]>` so small expansions
     /// are stored inline; larger ones spill to the heap.
     ///
     /// ## Parameters
-    /// - `capacity`: maximum number of components (not including
-    ///   the extra sentry slot).
+    /// - `capacity`: maximum number of components, if this is less then the inline capacity it will still be 9.
     ///
     /// ## Examples
     /// ```
     /// # use geogram_predicates::Expansion;
     /// let e = Expansion::with_capacity(5);
-    /// assert_eq!(e.capacity(), 5);
+    /// assert_eq!(e.capacity(), 9);
+    /// assert_eq!(e.length(), 0);
+    /// let e = Expansion::with_capacity(10);
+    /// assert_eq!(e.capacity(), 10);
     /// assert_eq!(e.length(), 0);
     /// ```
     pub fn with_capacity(capacity: usize) -> Self {
@@ -226,6 +242,7 @@ impl Expansion {
         Self { data }
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.data.len()
     }
@@ -236,14 +253,17 @@ impl Expansion {
         self.data.len() == 0
     }
 
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.data.capacity()
     }
 
+    #[inline]
     pub fn data(&self) -> &[f64] {
         &self.data
     }
 
+    #[inline]
     pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<[f64; 9]> {
         &mut self.data
     }

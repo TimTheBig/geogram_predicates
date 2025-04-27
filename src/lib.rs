@@ -508,14 +508,14 @@ mod geogram_ffi {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates as gp;
+/// use geogram_predicates::points_are_colinear_3d;
 ///
 /// // Define three points on a line
 /// let p1 = [0.0, 0.0, 0.0];
 /// let p2 = [0.0, 0.0, 1.0];
 /// let p3 = [0.0, 0.0, 2.0];
 ///
-/// assert!(gp::points_are_colinear_3d(&p1, &p2, &p3));
+/// assert!(points_are_colinear_3d(&p1, &p2, &p3));
 /// ```
 pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool {
     // Colinearity is tested by using four coplanarity

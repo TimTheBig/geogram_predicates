@@ -26,7 +26,7 @@ const FPG_UNCERTAIN_VALUE: i8 = 0;
 /// # Example
 /// For a graphical representation see this [geogebra example](https://www.geogebra.org/m/etyzj96t) of the code below.
 /// ```
-/// use geogram_predicates as gp;
+/// use geogram_predicates::orient_2dlifted_sos;
 ///
 /// // Define three points that form a triangle
 /// let a: [f64; 2] = [0.0, 0.0];
@@ -47,10 +47,10 @@ const FPG_UNCERTAIN_VALUE: i8 = 0;
 /// let p_above: [f64; 2] = [0.6, 0.6];
 /// let h_p_above = p_above[0].powf(2.0) + p_above[1].powf(2.0) + 2.78;  // i.e. w_p_above = -2.78
 ///
-/// let orientation_below = gp::orient_2dlifted_SOS(&a, &b, &c, &p_below, h_a, h_b, h_c, h_p_below);
+/// let orientation_below = orient_2dlifted_sos(&a, &b, &c, &p_below, [h_a, h_b, h_c, h_p_below]);
 /// assert_eq!(1, orientation_below);
 ///
-/// let orientation_above = gp::orient_2dlifted_SOS(&a, &b, &c, &p_above, h_a, h_b, h_c, h_p_above);
+/// let orientation_above = orient_2dlifted_sos(&a, &b, &c, &p_above, [h_a, h_b, h_c, h_p_above]);
 /// assert_eq!(-1, orientation_above);
 /// ```
 pub fn orient_2dlifted_sos(
