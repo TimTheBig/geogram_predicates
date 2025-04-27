@@ -92,7 +92,7 @@ macro_rules! expansion_det3x3 {
         let cap = $crate::Expansion::det3x3_capacity(
             [&$a11, &$a12, &$a13],
             [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33]
+            [&$a31, &$a32, &$a33],
         );
         // Allocate an Expansion with that capacity
         let mut e = $crate::Expansion::with_capacity(cap);
@@ -100,7 +100,7 @@ macro_rules! expansion_det3x3 {
         e.assign_det3x3(
             [&$a11, &$a12, &$a13],
             [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33]
+            [&$a31, &$a32, &$a33],
         );
         e
     }};
@@ -113,7 +113,7 @@ macro_rules! expansion_det3x3 {
         let cap = $crate::Expansion::det3x3_capacity(
             [&$a11, &$a12, &$a13],
             [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33]
+            [&$a31, &$a32, &$a33],
         );
         // Allocate an Expansion with that capacity
         let mut e = $crate::Expansion::with_capacity(cap);
@@ -121,13 +121,79 @@ macro_rules! expansion_det3x3 {
         e.assign_det3x3(
             [&$a11, &$a12, &$a13],
             [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33]
+            [&$a31, &$a32, &$a33],
         );
         e
     }};
 }
 
-pub(crate) use expansion_det3x3;
+macro_rules! expansion_det2x2 {
+    (
+        $a11:expr, $a12:expr,
+        $a21:expr, $a22:expr$(,)?
+    ) => {{
+        // Compute exactly the capacity needed
+        let cap = $crate::Expansion::det2x2_capacity(&$a11, &$a12, &$a21, &$a22);
+        // Allocate an Expansion with that capacity
+        let mut e = $crate::Expansion::with_capacity(cap);
+        // Perform the determinant assignment
+        e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
+        e
+    }};
+    (
+        [$a11:expr, $a12:expr],
+        [$a21:expr, $a22:expr]$(,)?
+    ) => {{
+        // Compute exactly the capacity needed
+        let cap = $crate::Expansion::det2x2_capacity(&$a11, &$a12, &$a21, &$a22);
+        // Allocate an Expansion with that capacity
+        let mut e = $crate::Expansion::with_capacity(cap);
+        // Perform the determinant assignment
+        e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
+        e
+    }};
+}
+
+macro_rules! expansion_diff {
+    ($a:expr, $b:expr) => {{
+        let mut expansion = Expansion::with_capacity(2);
+        expansion.assign_diff(&$a.into(), &$b.into());
+        expansion
+    }};
+}
+
+macro_rules! expansion_sum {
+    ($a:expr, $b:expr) => {{
+        let capacity = $a.length() + $b.length();
+        let mut expansion = Expansion::with_capacity(capacity);
+        expansion.assign_sum(&$a, &$b);
+        expansion
+    }};
+}
+
+macro_rules! expansion_sum3 {
+    ($a:expr, $b:expr, $c:expr) => {{
+        let capacity = $a.length() + $b.length();
+        let mut ab = Expansion::with_capacity(capacity);
+        ab.assign_sum(&$a, &$b);
+        let mut expansion = Expansion::with_capacity(capacity + $c.length());
+        expansion.assign_sum(&ab, &$c);
+        expansion
+    }};
+}
+
+macro_rules! expansion_product {
+    ($a:expr, $b:expr) => {{
+        let mut expansion = Expansion::with_capacity(2);
+        expansion.assign_product(&$a, &$b);
+        expansion
+    }};
+}
+
+pub(crate) use {
+    expansion_det2x2, expansion_det3x3, expansion_diff, expansion_product, expansion_sum,
+    expansion_sum3,
+};
 
 impl Default for Expansion {
     fn default() -> Self {
@@ -406,8 +472,7 @@ impl Expansion {
         a11: &Expansion, a12: &Expansion,
         a21: &Expansion, a22: &Expansion,
     ) -> usize {
-        Self::product_capacity(a11, a22)
-            + Self::product_capacity(a21, a12)
+        Self::product_capacity(a11, a22) + Self::product_capacity(a21, a12)
     }
 
     /// Assign to `self` the 2×2 determinant of the four expansions:

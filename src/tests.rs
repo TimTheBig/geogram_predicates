@@ -216,7 +216,7 @@ fn test_orient_2dlifted_and_3dlifted() {
     let c2 = [0.0, 1.0];
     let p2 = [0.1, 0.1];
     let h = 0.0;
-    let res = gp::orient_2dlifted_SOS(&a2, &b2, &c2, &p2, h, h, h, h) as i8;
+    let res = gp::orient_2dlifted_sos(&a2, &b2, &c2, &p2, [h, h, h, h]);
     assert_eq!(res, gp::in_circle_2d_sos::<false>(&a2, &b2, &c2, &p2));
 
     // 3D lifted: trivial with zero weights equals insphere

@@ -6,49 +6,23 @@
 #[cfg(test)]
 mod tests;
 
-use core::cmp::Ordering;
 pub use geogram_ffi::*;
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
 
+mod types;
+pub use types::Sign;
+
 mod expansion;
 pub use expansion::Expansion;
+
+mod orient_2dlifter;
+pub use orient_2dlifter::orient_2dlifted_sos;
 
 pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
 
-/// A helper for functions that return signs
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-#[repr(i8)]
-pub enum Sign {
-    Positive = 1,
-    Zero = 0,
-    Negative = -1,
-}
-
-impl From<Sign> for i8 {
-    fn from(sign: Sign) -> i8 {
-        sign as i8
-    }
-}
-
-impl PartialEq<i8> for Sign {
-    fn eq(&self, other: &i8) -> bool {
-        (self.clone() as i8) == *other
-    }
-}
-
-impl PartialEq<Sign> for i8 {
-    fn eq(&self, other: &Sign) -> bool {
-        (other.clone() as i8) == *self
-    }
-}
-
-impl PartialOrd<i8> for Sign {
-    fn partial_cmp(&self, other: &i8) -> Option<Ordering> {
-        (self.clone() as i8).partial_cmp(other)
-    }
-}
+const FPG_UNCERTAIN_VALUE: i8 = 0;
 
 /// Gets the sign of a value.
 ///
@@ -344,8 +318,6 @@ pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
 
 #[inline]
 const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
-    const FPG_UNCERTAIN_VALUE: i8 = 0;
-
     let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
         + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
 
@@ -448,67 +420,6 @@ mod geogram_ffi {
 
         /// Needs to be called before using any predicate.
         fn initialize();
-
-        /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
-        ///
-        /// Given three lifted points `a'`, `b'`, `c'` in R^3, tests if the lifted point `p'` in R^3 lies below or above the plane passing through the three points `a'`, `b'`, `c'`.
-        ///
-        /// The coordinates and the heights are specified in separate arguments for each vertex.
-        ///
-        /// Note: if `w_i` = 0 this is equal to the in-circle test for the triangle `a`, `b`, `c` w.r.t `p`.
-        ///
-        /// ### Parameters
-        /// - `a` ,`b`, `c`	vertices of the triangle
-        /// - `p` point to test
-        /// - `h_a` ,`h_b` ,`h_c` the heights of the lifted points, e.g. `a' = a.x**2 + a.y**2 - a.w`
-        /// - `h_p` the height of the lifted point `p`
-        ///
-        /// ### Return values
-        /// - `+1` - if p3' lies below the plane
-        /// - `-1` - if p3' lies above the plane
-        /// - perturb()	- if `p'` lies exactly on the hyperplane, where perturb() denotes a globally consistent perturbation, that returns either `+1` or `-1`
-        ///
-        /// # Example
-        /// For a graphical representation see this [geogebra example](https://www.geogebra.org/m/etyzj96t) of the code below.
-        /// ```
-        /// use geogram_predicates as gp;
-        ///
-        /// // Define three points that form a triangle
-        /// let a: [f64; 2] = [0.0, 0.0];
-        /// let b: [f64; 2] = [2.0, 0.0];
-        /// let c: [f64; 2] = [0.0, 2.0];
-        ///
-        /// // Additionally in this scenario, each point is associated with a weight w_i
-        /// // And the height of a point is defined as h_i = x_i**2 + y_i**2 - w_i
-        /// // One can interpret the height as the z-coordinate of a point lifted to R^3
-        /// let h_a = a[0].powf(2.0) + a[1].powf(2.0) + 2.0;  // i.e. w_a = -2.0
-        /// let h_b = b[0].powf(2.0) + b[1].powf(2.0) - 1.0;  // i.e. w_b = 1.0
-        /// let h_c = c[0].powf(2.0) + c[1].powf(2.0) - 0.5;  // i.e. w_c = 0.5
-        ///
-        /// // Define weighted points, to test against the plane, that contains the lifted triangle
-        /// let p_below: [f64; 2] = [0.6, 0.6];
-        /// let h_p_below = p_below[0].powf(2.0) + p_below[1].powf(2.0) + 1.28;  // i.e. w_p_below = -1.28
-        ///
-        /// let p_above: [f64; 2] = [0.6, 0.6];
-        /// let h_p_above = p_above[0].powf(2.0) + p_above[1].powf(2.0) + 2.78;  // i.e. w_p_above = -2.78
-        ///
-        /// let orientation_below = gp::orient_2dlifted_SOS(&a, &b, &c, &p_below, h_a, h_b, h_c, h_p_below);
-        /// assert_eq!(1, orientation_below);
-        ///
-        /// let orientation_above = gp::orient_2dlifted_SOS(&a, &b, &c, &p_above, h_a, h_b, h_c, h_p_above);
-        /// assert_eq!(-1, orientation_above);
-        /// ```
-        #[allow(clippy::too_many_arguments)]
-        fn orient_2dlifted_SOS(
-            a: &[f64; 2],
-            b: &[f64; 2],
-            c: &[f64; 2],
-            p: &[f64; 2],
-            h_a: f64,
-            h_b: f64,
-            h_c: f64,
-            h_p: f64,
-        ) -> i16;
 
         /// Computes the 4d orientation test with lifted points, i.e the regularity test for 3d.
         ///
