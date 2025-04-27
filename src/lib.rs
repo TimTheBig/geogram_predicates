@@ -14,7 +14,7 @@ mod types;
 pub use types::Sign;
 
 mod expansion;
-pub use expansion::Expansion;
+pub use expansion::expansion::Expansion;
 
 mod orient_2dlifter;
 pub use orient_2dlifter::orient_2dlifted_sos;
@@ -22,7 +22,7 @@ pub use orient_2dlifter::orient_2dlifted_sos;
 pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
 
-const FPG_UNCERTAIN_VALUE: i8 = 0;
+pub(crate) const FPG_UNCERTAIN_VALUE: i8 = 0;
 
 /// Gets the sign of a value.
 ///

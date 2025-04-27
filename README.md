@@ -32,6 +32,9 @@ assert_eq!(-1, is_in_circle_p_out);
 // ...
 ```
 
+## Safety
+The only unsafe code transmutes an array to a struct of the same size and types, which does not affect the values as long as it's not a reference.
+
 ## Visualizing Advantages of Robust Predicates
 
 Below are visualizations comparing naive and robust `orient_2d` & `in_circle_2d` implementations. You can generate these images yourself by running the _examples_ for [`orient_2d`](examples/orient_2d/) or [`in_circle_2d`](examples/in_circle_2d/).

@@ -1,8 +1,6 @@
 use core::cmp::Ordering;
-pub use crate::expansion::Expansion;
-use crate::{Point2d, Point3d};
-
-const FPG_UNCERTAIN_VALUE: i8 = 0;
+pub use crate::Expansion;
+use crate::{Point2d, Point3d, FPG_UNCERTAIN_VALUE};
 
 /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
 ///
