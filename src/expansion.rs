@@ -4,8 +4,9 @@ use smallvec::SmallVec;
 
 #[derive(Clone, Debug)]
 pub struct Expansion {
-    /// capacity is dynamic but starts inline
-    data: SmallVec<[f64; 2]>,
+    /// capacity is dynamic but starts inline for the first 9 elements
+    // it's 9 so det3x3 is inline
+    data: SmallVec<[f64; 9]>,
 }
 
 impl fmt::Display for Expansion {
@@ -243,7 +244,7 @@ impl Expansion {
         &self.data
     }
 
-    pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<[f64; 2]> {
+    pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<[f64; 9]> {
         &mut self.data
     }
 
