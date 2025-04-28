@@ -124,8 +124,18 @@ macro_rules! expansion_det2x2 {
 
 macro_rules! expansion_diff {
     ($a:expr, $b:expr) => {{
-        let mut expansion = Expansion::with_capacity(2);
+        let mut expansion = Expansion::<2>::with_capacity(2);
         expansion.assign_diff(&$a.into(), &$b.into());
+        expansion
+    }};
+    (Expansions: $a:expr, $b:expr) => {{
+        let mut expansion = Expansion::<2>::with_capacity(2);
+        expansion.assign_diff(&$a, &$b);
+        expansion
+    }};
+    ($a:expr, $b:expr, $AN:literal, $BN:literal) => {{
+        let mut expansion = Expansion::with_capacity(2);
+        expansion.assign_diff::<$AN, $BN>(&$a.into(), &$b.into());
         expansion
     }};
 }
@@ -150,6 +160,21 @@ macro_rules! expansion_sum3 {
     }};
 }
 
+macro_rules! expansion_sum4 {
+    ($a:expr, $b:expr, $c:expr, $d:expr, $ab_capacity:literal, $cd_capacity:literal) => {{
+        let ab_capacity = $a.length() + $b.length();
+        let mut ab = Expansion::<$ab_capacity>::with_capacity(ab_capacity);
+        ab.assign_sum(&$a, &$b);
+
+        let cd_capacity = $c.length() + $d.length();
+        let mut cd = Expansion::<$cd_capacity>::with_capacity(cd_capacity);
+        cd.assign_sum(&$c, &$d);
+        let mut expansion = Expansion::with_capacity(ab_capacity + cd_capacity);
+        expansion.assign_sum(&ab, &cd);
+        expansion
+    }};
+}
+
 macro_rules! expansion_product {
     ($a:expr, $b:expr) => {{
         let mut expansion = Expansion::with_capacity(2);
@@ -160,5 +185,5 @@ macro_rules! expansion_product {
 
 pub(crate) use {
     expansion_det2x2, expansion_det3x3, expansion_diff, expansion_product, expansion_sum,
-    expansion_sum3,
+    expansion_sum3, expansion_sum4,
 };

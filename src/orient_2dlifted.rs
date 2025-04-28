@@ -1,6 +1,6 @@
 use core::cmp::Ordering;
 pub use crate::Expansion;
-use crate::{Point2d, Point3d, FPG_UNCERTAIN_VALUE};
+use crate::{Point2d, FPG_UNCERTAIN_VALUE};
 
 /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
 ///
@@ -19,7 +19,7 @@ use crate::{Point2d, Point3d, FPG_UNCERTAIN_VALUE};
 /// ### Return values
 /// - `+1` - if p3' lies below the plane
 /// - `-1` - if p3' lies above the plane
-/// - perturb()	- if `p'` lies exactly on the hyperplane, where perturb() denotes a globally consistent perturbation, that returns either `+1` or `-1`
+/// - `0`	- if `p'` lies exactly on the hyperplane
 ///
 /// # Example
 /// For a graphical representation see this [geogebra example](https://www.geogebra.org/m/etyzj96t) of the code below.
@@ -104,10 +104,8 @@ fn side3_2dlifted_2d_filter(
     let mut upper_bound_1 = max1;
     if max2 < lower_bound_1 {
         lower_bound_1 = max2;
-    } else {
-        if max2 > upper_bound_1 {
-            upper_bound_1 = max2;
-        }
+    } else if max2 > upper_bound_1 {
+        upper_bound_1 = max2;
     }
     if lower_bound_1 < 5.00368081960964635413e-147 {
         return FPG_UNCERTAIN_VALUE;
@@ -118,14 +116,13 @@ fn side3_2dlifted_2d_filter(
         eps = 8.88720573725927976811e-16 * (max1 * max2);
         if delta3 > eps {
             int_tmp_result = 1;
+        } else if delta3 < -eps {
+            int_tmp_result = -1;
         } else {
-            if delta3 < -eps {
-                int_tmp_result = -1;
-            } else {
-                return FPG_UNCERTAIN_VALUE;
-            }
+           return FPG_UNCERTAIN_VALUE;
         }
     }
+
     let delta3_sign = int_tmp_result;
     let int_tmp_result_ffwkcaa;
     let mut max3 = max1;
@@ -150,18 +147,15 @@ fn side3_2dlifted_2d_filter(
     upper_bound_1 = max3;
     if max5 < lower_bound_1 {
         lower_bound_1 = max5;
-    } else {
-        if max5 > upper_bound_1 {
-            upper_bound_1 = max5;
-        }
+    } else if max5 > upper_bound_1 {
+        upper_bound_1 = max5;
     }
     if max4 < lower_bound_1 {
         lower_bound_1 = max4;
-    } else {
-        if max4 > upper_bound_1 {
-            upper_bound_1 = max4;
-        }
+    } else if max4 > upper_bound_1 {
+        upper_bound_1 = max4;
     }
+
     // I think that is a bit out of the f64 range
     if lower_bound_1 < 1.63288018496748314939e-98 {
         return FPG_UNCERTAIN_VALUE;
@@ -172,12 +166,10 @@ fn side3_2dlifted_2d_filter(
         eps = 5.11071278299732992696e-15 * ((max3 * max5) * max4);
         if r > eps {
             int_tmp_result_ffwkcaa = 1;
+        } else if r < -eps {
+            int_tmp_result_ffwkcaa = -1;
         } else {
-            if r < -eps {
-                int_tmp_result_ffwkcaa = -1;
-            } else {
-                return FPG_UNCERTAIN_VALUE;
-            }
+            return FPG_UNCERTAIN_VALUE;
         }
     }
 
@@ -193,35 +185,42 @@ fn side3h_2d_exact_sos(
     sos: Option<bool>,
 ) -> i8 {
     use crate::expansion::{
-        expansion_det2x2, expansion_diff, expansion_product, expansion_sum, expansion_sum3,
+        expansion_det2x2, expansion_diff, expansion_product, expansion_sum,
     };
 
     let sos = sos.unwrap_or(true);
 
-    let a11 = expansion_diff!(p1[0], p0[0]);
-    let a12 = expansion_diff!(p1[1], p0[1]);
-    let a13 = expansion_diff!(h0, h1);
+    let a11: Expansion<2> = expansion_diff!(p1[0], p0[0], 1, 1);
+    let a12: Expansion<2> = expansion_diff!(p1[1], p0[1], 1, 1);
+    let a13: Expansion<2> = expansion_diff!(h0, h1, 1, 1);
 
-    let a21 = expansion_diff!(p2[0], p0[0]);
-    let a22 = expansion_diff!(p2[1], p0[1]);
-    let a23 = expansion_diff!(h0, h2);
+    let a21: Expansion<2> = expansion_diff!(p2[0], p0[0], 1, 1);
+    let a22: Expansion<2> = expansion_diff!(p2[1], p0[1], 1, 1);
+    let a23: Expansion<2> = expansion_diff!(h0, h2, 1, 1);
 
-    let a31 = expansion_diff!(p3[0], p0[0]);
-    let a32 = expansion_diff!(p3[1], p0[1]);
-    let a33 = expansion_diff!(h0, h3);
+    let a31: Expansion<2> = expansion_diff!(p3[0], p0[0], 1, 1);
+    let a32: Expansion<2> = expansion_diff!(p3[1], p0[1], 1, 1);
+    let a33: Expansion<2> = expansion_diff!(h0, h3, 1, 1);
 
-    let delta1 = expansion_det2x2!(a21, a22, a31, a32);
-    let delta2 = expansion_det2x2!(a11, a12, a31, a32);
-    let delta3 = expansion_det2x2!(a11, a12, a21, a22);
+    let delta1: Expansion<4> = expansion_det2x2!(a21, a22, a31, a32);
+    let delta2: Expansion<4> = expansion_det2x2!(a11, a12, a31, a32);
+    let delta3: Expansion<4> = expansion_det2x2!(a11, a12, a21, a22);
 
     let delta3_sign = delta3.sign();
     debug_assert!(delta3_sign != 0);
 
-    let r_1 = expansion_product!(delta1, a13);
-    let mut r_2 = expansion_product!(delta2, a23);
+    let r_1: Expansion<4> = expansion_product!(delta1, a13);
+    let mut r_2: Expansion<4> = expansion_product!(delta2, a23);
     r_2.negate();
-    let r_3 = expansion_product!(delta3, a33);
-    let r = expansion_sum3!(r_1, r_2, r_3);
+    let r_3: Expansion<4> = expansion_product!(delta3, a33);
+    let r: Expansion<6> = {
+        let capacity = r_1.length() + r_2.length();
+        let mut ab: Expansion<4> = Expansion::with_capacity(capacity);
+        ab.assign_sum(&r_1, &r_2);
+        let mut expansion: Expansion<6> = Expansion::with_capacity(capacity + r_3.length());
+        expansion.assign_sum(&ab, &r_3);
+        expansion
+    };
 
     let r_sign = r.sign();
 
@@ -229,14 +228,15 @@ fn side3h_2d_exact_sos(
     if sos && r_sign == 0 {
         let mut p_sort = [p0, p1, p2, p3];
         p_sort.sort_by(lexico_compare_2d);
+
         for i in 0..3 {
             if p_sort[i] == p0 {
                 let z1 = {
-                    let mut expansion = Expansion::with_capacity(2);
+                    let mut expansion: Expansion<2> = Expansion::with_capacity(2);
                     expansion.assign_diff(&delta2, &delta1);
                     expansion
                 };
-                let z = expansion_sum!(z1, delta3);
+                let z: Expansion<4> = expansion_sum!(z1, delta3);
                 let z_sign = z.sign();
                 if z_sign != 0 {
                     return delta3_sign * z_sign;
@@ -249,7 +249,7 @@ fn side3h_2d_exact_sos(
             } else if p_sort[i] == p2 {
                 let delta2_sign = delta2.sign();
                 if delta2_sign != 0 {
-                    return -delta3_sign * delta2_sign;
+                    return (-delta3_sign) * delta2_sign;
                 }
             } else if p_sort[i] == p3 {
                 return -1;
@@ -271,19 +271,5 @@ fn lexico_compare_2d(x: &&Point2d, y: &&Point2d) -> Ordering {
         Ordering::Greater
     } else {
         x[0].total_cmp(&y[0])
-    }
-}
-
-fn lexico_compare_3d(x: &&Point3d, y: &&Point3d) -> Ordering {
-    if x[0] < y[0] {
-        Ordering::Less
-    } else if x[0] > y[0] {
-        Ordering::Greater
-    } else if x[1] < y[1] {
-        Ordering::Less
-    } else if x[1] > y[1] {
-        Ordering::Greater
-    } else {
-        x[2].total_cmp(&y[2])
     }
 }

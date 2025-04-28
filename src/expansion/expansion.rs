@@ -3,13 +3,13 @@ use core::{cmp::Ordering, fmt};
 use smallvec::SmallVec;
 
 #[derive(Clone, Debug)]
-pub struct Expansion {
-    /// capacity is dynamic but starts inline for the first 9 elements
-    // it's 9 so det3x3 is inline
-    data: SmallVec<[f64; 9]>,
+pub struct Expansion<const N: usize = 9> {
+    /// capacity is dynamic but starts inline for the first N elements
+    // the default is 9 so det3x3 is all inline
+    data: SmallVec<[f64; N]>,
 }
 
-impl fmt::Display for Expansion {
+impl<const N: usize> fmt::Display for Expansion<N> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Expansion(len: {}) = [", self.len())?;
         if self.len() > 1 {
@@ -24,15 +24,15 @@ impl fmt::Display for Expansion {
     }
 }
 
-impl PartialEq for Expansion {
+impl<const N: usize> PartialEq for Expansion<N> {
     // todo check if this should be `self.data == other.data`
     fn eq(&self, other: &Self) -> bool {
         self.equals(other)
     }
 }
 
-impl PartialOrd for Expansion {
-    fn partial_cmp(&self, other: &Expansion) -> Option<Ordering> {
+impl<const N: usize> PartialOrd for Expansion<N> {
+    fn partial_cmp(&self, other: &Expansion<N>) -> Option<Ordering> {
         // Always returns Some(Ordering) because compare() gives a total order.
         let est_self = self.estimate();
         let est_rhs = other.estimate();
@@ -40,14 +40,14 @@ impl PartialOrd for Expansion {
     }
 }
 
-impl core::ops::Index<usize> for Expansion {
+impl<const N: usize> core::ops::Index<usize> for Expansion<N> {
     type Output = f64;
     fn index(&self, idx: usize) -> &f64 {
         &self.data[idx]
     }
 }
 
-impl Default for Expansion {
+impl<const N: usize> Default for Expansion<N> {
     fn default() -> Self {
         Self {
             data: SmallVec::new(),
@@ -55,7 +55,7 @@ impl Default for Expansion {
     }
 }
 
-impl Expansion {
+impl<const N: usize> Expansion<N> {
     /// Create a new `Expansion` with the given capacity.
     ///
     /// Internally uses a `SmallVec<[f64; 9]>` so small expansions
@@ -67,10 +67,10 @@ impl Expansion {
     /// ## Examples
     /// ```
     /// # use geogram_predicates::Expansion;
-    /// let e = Expansion::with_capacity(5);
-    /// assert_eq!(e.capacity(), 9);
+    /// let e: Expansion = Expansion::with_capacity(5);
+    /// assert_eq!(e.capacity(), 9); // 9 is the default Expansion inline capacity
     /// assert_eq!(e.length(), 0);
-    /// let e = Expansion::with_capacity(10);
+    /// let e = Expansion::<9>::with_capacity(10); // on heap
     /// assert_eq!(e.capacity(), 10);
     /// assert_eq!(e.length(), 0);
     /// ```
@@ -101,7 +101,7 @@ impl Expansion {
     }
 
     #[inline]
-    pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<[f64; 9]> {
+    pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<[f64; N]> {
         &mut self.data
     }
 
@@ -122,7 +122,7 @@ impl Expansion {
     /// ## Examples
     /// ```
     /// # use geogram_predicates::Expansion;
-    /// let mut e = Expansion::with_capacity(2);
+    /// let mut e = Expansion::<2>::with_capacity(2);
     /// e.assign(3.14);
     /// assert_eq!(e.length(), 1);
     /// assert_eq!(e[0], 3.14);
@@ -194,7 +194,7 @@ impl Expansion {
         }
     }
 
-    pub(crate) fn equals(&self, rhs: &Expansion) -> bool {
+    pub(crate) fn equals(&self, rhs: &Expansion<N>) -> bool {
         self.compare(rhs) == Sign::Zero
     }
 
@@ -212,14 +212,14 @@ impl Expansion {
     /// let b = Expansion::from(2.0);
     /// assert!(a < b);
     /// ```
-    pub(crate) fn compare(&self, rhs: &Expansion) -> Sign {
+    pub(crate) fn compare(&self, rhs: &Expansion<N>) -> Sign {
         let est_self = self.estimate();
         let est_rhs = rhs.estimate();
         geo_sign(est_self - est_rhs)
     }
 }
 
-impl From<f64> for Expansion {
+impl From<f64> for Expansion<1> {
     /// Create a length-1 expansion holding exactly `a`.
     fn from(a: f64) -> Self {
         let mut e = Expansion::with_capacity(1);
@@ -228,23 +228,36 @@ impl From<f64> for Expansion {
     }
 }
 
-impl<const N: usize> From<[f64; N]> for Expansion {
+// impl<const N: usize> From<[f64; N]> for Expansion {
+//     /// Create an expansion from an array of `N` doubles.
+//     ///
+//     /// The resulting expansion has length `N` and
+//     /// components equal to the array elements in order.
+//     fn from(arr: [f64; N]) -> Self {
+//         let mut e = Expansion::with_capacity(N);
+//         // push each element in turn
+//         for &v in &arr {
+//             // we know capacity ≥ N, so this cannot panic
+//             e.data_mut().push(v);
+//         }
+//         e
+//     }
+// }
+
+impl<const N: usize> From<[f64; N]> for Expansion<N> {
     /// Create an expansion from an array of `N` doubles.
     ///
     /// The resulting expansion has length `N` and
     /// components equal to the array elements in order.
     fn from(arr: [f64; N]) -> Self {
-        let mut e = Expansion::with_capacity(N);
-        // push each element in turn
-        for &v in &arr {
-            // we know capacity ≥ N, so this cannot panic
-            e.data_mut().push(v);
+        Expansion {
+            // SAFE: arr len is <= N as arr len must be 9
+            data: unsafe { SmallVec::from_const_with_len_unchecked(arr, N) },
         }
-        e
     }
 }
 
-impl From<&[f64]> for Expansion {
+impl<const N: usize> From<&[f64]> for Expansion<N> {
     /// Create an expansion from a slice of doubles.
     ///
     /// The resulting expansion has length `slice.len()` and
@@ -256,120 +269,15 @@ impl From<&[f64]> for Expansion {
     }
 }
 
-impl Expansion {
-    /// Compute the capacity needed to form the 3×3 determinant
-    /// of the nine expansions a11…a33.
-    ///
-    /// Mirrors C++:
-    /// ```cpp
-    /// index_t c11 = det2x2_capacity(a22,a23,a32,a33);
-    /// index_t c12 = det2x2_capacity(a21,a23,a31,a33);
-    /// index_t c13 = det2x2_capacity(a21,a22,a31,a32);
-    /// return 2 * (a11.len()*c11 + a12.len()*c12 + a13.len()*c13);
-    /// ```
-    pub(crate) fn det3x3_capacity(
-        [a11, a12, a13]: [&Expansion; 3],
-        [a21, a22, a23]: [&Expansion; 3],
-        [a31, a32, a33]: [&Expansion; 3],
-    ) -> usize {
-        let c11 = Self::det2x2_capacity(a22, a23, a32, a33);
-        let c12 = Self::det2x2_capacity(a21, a23, a31, a33);
-        let c13 = Self::det2x2_capacity(a21, a22, a31, a32);
-        2 * ((a11.length() * c11) + (a12.length() * c12) + (a13.length() * c13))
-    }
-
-    /// Assign to `self` the 3×3 determinant of the nine expansions.
-    ///
-    /// Computes
-    /// ```txt
-    /// a11·det2x2(a22,a23,a32,a33)
-    /// − a12·det2x2(a21,a23,a31,a33)
-    /// + a13·det2x2(a21,a22,a31,a32)
-    /// ```
-    pub(crate) fn assign_det3x3(
-        &mut self,
-        [a11, a12, a13]: [&Expansion; 3],
-        [a21, a22, a23]: [&Expansion; 3],
-        [a31, a32, a33]: [&Expansion; 3],
-    ) -> &mut Self {
-        // 1) build the three 2×2 minors
-        let mut m11 = Expansion::with_capacity(Self::det2x2_capacity(a22, a23, a32, a33));
-        m11.assign_det2x2(a22, a23, a32, a33);
-
-        let mut m12 = Expansion::with_capacity(Self::det2x2_capacity(a21, a23, a31, a33));
-        m12.assign_det2x2(a21, a23, a31, a33);
-
-        let mut m13 = Expansion::with_capacity(Self::det2x2_capacity(a21, a22, a31, a32));
-        m13.assign_det2x2(a21, a22, a31, a32);
-
-        // 2) form the three products
-        let mut t1 = Expansion::with_capacity(Self::product_capacity(a11, &m11));
-        t1.assign_product(a11, &m11);
-
-        let mut t2 = Expansion::with_capacity(Self::product_capacity(a12, &m12));
-        t2.assign_product(a12, &m12);
-
-        let mut t3 = Expansion::with_capacity(Self::product_capacity(a13, &m13));
-        t3.assign_product(a13, &m13);
-
-        // 3) combine: (t1 - t2) + t3
-        let mut tmp = Expansion::with_capacity(self.capacity()); // todo make this needed total
-        tmp.assign_sum(&t1, &t3);
-        self.assign_diff(&tmp, &t2)
-    }
-
-    /// Compute the capacity needed to form the 2×2 determinant
-    /// of the four expansions a11, a12, a21, a22.
-    ///
-    /// Mirrors C++:
-    /// ```cpp
-    /// return product_capacity(a11, a22)
-    ///      + product_capacity(a21, a12);
-    /// ```
-    pub(crate) fn det2x2_capacity(
-        a11: &Expansion, a12: &Expansion,
-        a21: &Expansion, a22: &Expansion,
-    ) -> usize {
-        Self::product_capacity(a11, a22) + Self::product_capacity(a21, a12)
-    }
-
-    /// Assign to `self` the 2×2 determinant of the four expansions:
-    ///     a11·a22 − a12·a21
-    ///
-    /// ## Panics
-    /// Panics if `self.capacity()` is less than `det2x2_capacity(...)`.
-    pub(crate) fn assign_det2x2(
-        &mut self,
-        a11: &Expansion, a12: &Expansion,
-        a21: &Expansion, a22: &Expansion,
-    ) -> &mut Self {
-        // build product a11 * a22
-        let mut p1 = Expansion::with_capacity(Self::product_capacity(a11, a22));
-        p1.assign_product(a11, a22);
-
-        // build product a12 * a21
-        let mut p2 = Expansion::with_capacity(Self::product_capacity(a12, a21));
-        p2.assign_product(a12, a21);
-
-        // self = p1 - p2
-        self.assign_diff(&p1, &p2)
-    }
-}
-
-impl Expansion {
-    /// Return the number of components in the expansion.
-    pub fn length(&self) -> usize {
-        self.data.len()
-    }
-
+impl<const N: usize> Expansion<N> {
     /// Compute capacity needed to multiply two expansions a and b.
-    pub(crate) fn product_capacity(a: &Expansion, b: &Expansion) -> usize {
+    pub(crate) fn product_capacity<const AN: usize, const BN: usize>(a: &Expansion<AN>, b: &Expansion<BN>) -> usize {
         a.length().saturating_mul(b.length()).saturating_mul(2)
     }
 
     /// Assign `self` = a + b (expansion sum).
     /// Naively concatenates the two expansions and then calls `optimize`.
-    pub(crate) fn assign_sum(&mut self, a: &Expansion, b: &Expansion) -> &mut Self {
+    pub(crate) fn assign_sum<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
         let new_len = a.length() + b.length();
         if self.data.capacity() < new_len {
             self.data.reserve(new_len - self.data.capacity());
@@ -384,16 +292,18 @@ impl Expansion {
     }
 
     /// Assign `self` = a - b (expansion difference).
-    pub(crate) fn assign_diff(&mut self, a: &Expansion, b: &Expansion) -> &mut Self {
+    pub(crate) fn assign_diff<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
+        // const { assert!(AN <= N && BN <= N) };
         // build negated b in a temp
-        let mut nb = Expansion { data: b.data.clone() };
+        let mut nb = Expansion { data: SmallVec::<[f64; N]>::with_capacity(BN) };
+        nb.data.extend_from_slice(b.data());
         nb.negate();
         self.assign_sum(a, &nb)
     }
 
     /// Assign `self` = a * b (expansion product).
     /// Uses Shewchuk's two_product on each coefficient pair.
-    pub(crate) fn assign_product(&mut self, a: &Expansion, b: &Expansion) -> &mut Self {
+    pub(crate) fn assign_product<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
         let cap = Self::product_capacity(a, b);
         assert!(cap <= self.capacity(), "assign_product: capacity too small");
         self.data.resize(cap, 0.0);
@@ -414,6 +324,11 @@ impl Expansion {
         self
     }
 
+    /// Return the number of components in the expansion.
+    pub fn length(&self) -> usize {
+        self.data.len()
+    }
+
     /// Remove trailing zero components to maintain a canonical form.
     ///
     /// After this call, `length()` is the smallest index such that
@@ -428,6 +343,104 @@ impl Expansion {
         }
         self
     }
+
+    /// Compute the capacity needed to form the 3×3 determinant
+    /// of the nine expansions a11…a33.
+    ///
+    /// Mirrors C++:
+    /// ```cpp
+    /// index_t c11 = det2x2_capacity(a22,a23,a32,a33);
+    /// index_t c12 = det2x2_capacity(a21,a23,a31,a33);
+    /// index_t c13 = det2x2_capacity(a21,a22,a31,a32);
+    /// return 2 * (a11.len()*c11 + a12.len()*c12 + a13.len()*c13);
+    /// ```
+    pub(crate) fn det3x3_capacity(
+        [a11, a12, a13]: [&Expansion<N>; 3],
+        [a21, a22, a23]: [&Expansion<N>; 3],
+        [a31, a32, a33]: [&Expansion<N>; 3],
+    ) -> usize {
+        let c11 = Self::det2x2_capacity(a22, a23, a32, a33);
+        let c12 = Self::det2x2_capacity(a21, a23, a31, a33);
+        let c13 = Self::det2x2_capacity(a21, a22, a31, a32);
+        2 * ((a11.length() * c11) + (a12.length() * c12) + (a13.length() * c13))
+    }
+
+    /// Assign to `self` the 3×3 determinant of the nine expansions.
+    ///
+    /// Computes
+    /// ```txt
+    /// a11·det2x2(a22,a23,a32,a33)
+    /// − a12·det2x2(a21,a23,a31,a33)
+    /// + a13·det2x2(a21,a22,a31,a32)
+    /// ```
+    pub(crate) fn assign_det3x3<const IN_N: usize>(
+        &mut self,
+        [a11, a12, a13]: [&Expansion<IN_N>; 3],
+        [a21, a22, a23]: [&Expansion<IN_N>; 3],
+        [a31, a32, a33]: [&Expansion<IN_N>; 3],
+    ) -> &mut Expansion<N> {
+        // 1) build the three 2×2 minors
+        let mut m11: Expansion<4> = Expansion::with_capacity(Expansion::det2x2_capacity(a22, a23, a32, a33));
+        m11.assign_det2x2(a22, a23, a32, a33);
+
+        let mut m12: Expansion<4> = Expansion::with_capacity(Expansion::det2x2_capacity(a21, a23, a31, a33));
+        m12.assign_det2x2(a21, a23, a31, a33);
+
+        let mut m13: Expansion<4> = Expansion::with_capacity(Expansion::det2x2_capacity(a21, a22, a31, a32));
+        m13.assign_det2x2(a21, a22, a31, a32);
+
+        // 2) form the three products
+        let mut t1: Expansion<4> = Expansion::with_capacity(Expansion::<IN_N>::product_capacity(a11, &m11));
+        t1.assign_product(a11, &m11);
+
+        let mut t2: Expansion<4> = Expansion::with_capacity(Expansion::<IN_N>::product_capacity(a12, &m12));
+        t2.assign_product(a12, &m12);
+
+        let mut t3: Expansion<4> = Expansion::with_capacity(Expansion::<IN_N>::product_capacity(a13, &m13));
+        t3.assign_product(a13, &m13);
+
+        // 3) combine: (t1 - t2) + t3
+        let mut tmp = Expansion::<N>::with_capacity(self.capacity()); // todo make this needed total
+        tmp.assign_sum(&t1, &t3);
+        self.assign_diff(&tmp, &t2)
+    }
+
+    /// Compute the capacity needed to form the 2×2 determinant
+    /// of the four expansions a11, a12, a21, a22.
+    ///
+    /// Mirrors C++:
+    /// ```cpp
+    /// return product_capacity(a11, a22)
+    ///      + product_capacity(a21, a12);
+    /// ```
+    pub(crate) fn det2x2_capacity(
+        a11: &Expansion<N>, a12: &Expansion<N>,
+        a21: &Expansion<N>, a22: &Expansion<N>,
+    ) -> usize {
+        Self::product_capacity(a11, a22) + Self::product_capacity(a21, a12)
+    }
+
+    /// Assign to `self` the 2×2 determinant of the four expansions:
+    ///     a11·a22 − a12·a21
+    ///
+    /// ## Panics
+    /// Panics if `self.capacity()` is less than `det2x2_capacity(...)`.
+    pub(crate) fn assign_det2x2<const IN_N: usize>(
+        &mut self,
+        a11: &Expansion<IN_N>, a12: &Expansion<IN_N>,
+        a21: &Expansion<IN_N>, a22: &Expansion<IN_N>,
+    ) -> &mut Expansion<N> {
+        // build product a11 * a22
+        let mut p1: Expansion<IN_N> = Expansion::with_capacity(Expansion::<IN_N>::product_capacity(a11, a22));
+        p1.assign_product(a11, a22);
+
+        // build product a12 * a21
+        let mut p2: Expansion<IN_N> = Expansion::with_capacity(Expansion::<IN_N>::product_capacity(a12, a21));
+        p2.assign_product(a12, a21);
+
+        // self = p1 - p2
+        self.assign_diff(&p1, &p2)
+    }
 }
 
 /// Two-product: return (low, high) parts of ai*bi
@@ -439,7 +452,7 @@ fn two_product(a: f64, b: f64) -> (f64, f64) {
 }
 
 #[inline]
-fn two_product_tail(a: f64, b: f64, x: f64) -> f64 {
+const fn two_product_tail(a: f64, b: f64, x: f64) -> f64 {
     let (ahi, alo) = split(a);
     let (bhi, blo) = split(b);
 
@@ -453,7 +466,7 @@ fn two_product_tail(a: f64, b: f64, x: f64) -> f64 {
 const SPLITTER: f64 = 134_217_729f64;
 
 #[inline]
-fn split(a: f64) -> (f64, f64) {
+const fn split(a: f64) -> (f64, f64) {
     let c = SPLITTER * a;
     let abig = c - a;
     let ahi = c - abig;
@@ -462,21 +475,26 @@ fn split(a: f64) -> (f64, f64) {
     (ahi, alo)
 }
 
-impl core::ops::Add for Expansion {
-    type Output = Expansion;
+impl<const N: usize> core::ops::Add for Expansion<N> {
+    // todo use when generic_const_exprs is stabe
+    // type Output = Expansion<{N + N}>;
+    type Output = Expansion<N>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let mut prod = Expansion::with_capacity(Expansion::product_capacity(&self, &rhs));
+        let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
         prod.assign_product(&self, &rhs);
         prod
     }
 }
 
-impl core::ops::Mul for Expansion {
-    type Output = Expansion;
+impl<const N: usize> core::ops::Mul for Expansion<N> {
+    // todo use when generic_const_exprs is stabe
+    // type Output = Expansion<{N.saturating_mul(b.length()).saturating_mul(2)}>;
+    type Output = Expansion<N>;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        let mut prod = Expansion::with_capacity(Expansion::product_capacity(&self, &rhs));
+    fn mul(self, rhs: Expansion<N>) -> Self::Output {
+        // todo when generic_const_exprs is stabe Expansion<{SN.max(RN)}>
+        let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
         prod.assign_product(&self, &rhs);
         prod
     }
