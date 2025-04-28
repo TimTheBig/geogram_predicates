@@ -16,8 +16,11 @@ pub use types::Sign;
 mod expansion;
 pub use expansion::expansion::Expansion;
 
-mod orient_2dlifter;
-pub use orient_2dlifter::orient_2dlifted_sos;
+mod orient_2dlifted;
+pub use orient_2dlifted::orient_2dlifted_sos;
+
+mod orient_3dlifted;
+pub use orient_3dlifted::orient_3dlifted_sos;
 
 pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
@@ -42,6 +45,7 @@ pub(crate) const FPG_UNCERTAIN_VALUE: i8 = 0;
 /// assert_eq!(geo_sign(c), Sign::Zero);
 /// ```
 #[inline]
+#[must_use]
 pub const fn geo_sign(value: f64) -> Sign {
     if value > 0.0 {
         Sign::Positive
@@ -420,72 +424,6 @@ mod geogram_ffi {
 
         /// Needs to be called before using any predicate.
         fn initialize();
-
-        /// Computes the 4d orientation test with lifted points, i.e the regularity test for 3d.
-        ///
-        /// Given four lifted points `a'`, `b'`, `c'`, `d'` in R^4, tests if the lifted point `p'` in R^4 lies below or above the hyperplane passing through the four points `a'`, `b'`, `c'`, `d'`.
-        ///
-        /// Symbolic perturbation is applied, whenever the 5 vertices are not linearly independent.
-        ///
-        /// The coordinates and the heights are specified in separate arguments for each vertex.
-        ///
-        /// Note: if `w_i` = 0 this is equal to the in-sphere test for the tetrahedron `a`, `b`, `c`, `d` w.r.t `p`.
-        ///
-        /// ### Parameters
-        /// - `a` ,`b`, `c`, `d` vertices of the tetrahedron
-        /// - `p` point to test
-        /// - `h_a` ,`h_b` ,`h_c`, `h_d` the heights of the lifted points, e.g. `h_a' = a.x**2 + a.y**2 - a.w`
-        /// - `h_p` the height of the lifted point `p'`
-        ///
-        /// ### Return values
-        /// - `+1` - if `p'` lies below the plane
-        /// - `-1` - if `p'` lies above the plane
-        /// - perturb()	- if `p'` lies exactly on the hyperplane, where perturb() denotes a globally consistent perturbation, that returns either `+1` or `-1`
-        ///
-        /// # Example
-        /// ```
-        /// use geogram_predicates as gp;
-        /// // Define four points that form a tetrahedron
-        /// let a: [f64; 3] = [0.0, 0.0, 0.0];
-        /// let b: [f64; 3] = [2.0, 0.0, 0.0];
-        /// let c: [f64; 3] = [0.0, 2.0, 0.0];
-        /// let d: [f64; 3] = [0.75, 0.75, 1.0];
-        ///
-        /// // Additionally in this scenario, each point is associated with a weight w_i
-        /// // And the height of a point is defined as h_i = x_i**2 + y_i**2 + z_i**2 - w_i
-        /// // One can interpret the height as the 4th-coordinate of a point lifted to R^4
-        /// let h_a = a[0].powf(2.0) + a[1].powf(2.0) + a[2].powf(2.0) + 2.0;  // i.e. w_a = -2.0
-        /// let h_b = b[0].powf(2.0) + b[1].powf(2.0) + b[2].powf(2.0) - 1.0;  // i.e. w_b = 1.0
-        /// let h_c = c[0].powf(2.0) + c[1].powf(2.0) + c[2].powf(2.0) - 0.5;  // i.e. w_c = 0.5
-        /// let h_d = d[0].powf(2.0) + d[1].powf(2.0) + d[2].powf(2.0) - 0.5;  // i.e. w_c = 0.5
-        ///
-        /// // Define weighted points, to test against the hyperplane, that contains the lifted tetrahedron
-        /// let p_below: [f64; 3] = [0.6, 0.6, 0.6];
-        /// let h_p_below = p_below[0].powf(2.0) + p_below[1].powf(2.0) + 0.28;  // i.e. w_p_below = -0.28
-        ///
-        /// let p_above: [f64; 3] = [0.6, 0.6, 0.6];
-        /// let h_p_above = p_above[0].powf(2.0) + p_above[1].powf(2.0) + 2.78;  // i.e. w_p_above = -2.78
-        ///
-        /// let orientation_below = gp::orient_3dlifted_SOS(&a, &b, &c, &d, &p_below, h_a, h_b, h_c, h_d, h_p_below);
-        /// assert_eq!(1, orientation_below);
-        ///
-        /// let orientation_above = gp::orient_3dlifted_SOS(&a, &b, &c, &d, &p_above, h_a, h_b, h_c, h_d, h_p_above);
-        /// assert_eq!(-1, orientation_above);
-        ///
-        /// ```
-        #[allow(clippy::too_many_arguments)]
-        fn orient_3dlifted_SOS(
-            a: &[f64; 3],
-            b: &[f64; 3],
-            c: &[f64; 3],
-            d: &[f64; 3],
-            p: &[f64; 3],
-            h_a: f64,
-            h_b: f64,
-            h_c: f64,
-            h_d: f64,
-            h_p: f64,
-        ) -> i16;
 
         /// Displays some statistics about predicates, including the number of calls, the number of exact arithmetics calls, and the number of Simulation of Simplicity calls.
         fn show_stats();

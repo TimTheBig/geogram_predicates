@@ -209,7 +209,6 @@ fn test_det_3d() {
 
 #[test]
 fn test_orient_2dlifted_and_3dlifted() {
-    setup();
     // 2D lifted: trivial case with zero weights equals incircle
     let a2 = [0.0, 0.0];
     let b2 = [1.0, 0.0];
@@ -226,9 +225,8 @@ fn test_orient_2dlifted_and_3dlifted() {
     let d3 = [0.0, 0.0, 1.0];
     let p3 = [0.1, 0.1, 0.1];
     let h3 = 0.0;
-    let res3 = gp::orient_3dlifted_SOS(&a3, &b3, &c3, &d3, &p3, h3, h3, h3, h3, h3) as i8;
-    assert_eq!(res3, gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
-    gp::terminate();
+    let res3 = gp::orient_3dlifted_sos(&a3, &b3, &c3, &d3, &p3, [h3, h3, h3, h3, h3]) as i8;
+    assert_eq!(res3, -gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
 }
 
 #[test]
