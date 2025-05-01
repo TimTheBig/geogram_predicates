@@ -3,10 +3,15 @@
 //! A crate for rust interoperability with `geogram`s _robust predicates_; via `cxx`.
 #![no_std]
 
+// #![deny(unused, clippy::missing_const_for_fn)]
+#![warn(clippy::all)]
+
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "legacy")]
 pub use geogram_ffi::*;
+
 use nalgebra::Point3;
 use robust::{Coord, Coord3D};
 
@@ -387,6 +392,7 @@ fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
     delta.sign() as i8
 }
 
+#[cfg(feature = "legacy")]
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {
     // Shared structs with fields visible to both languages.

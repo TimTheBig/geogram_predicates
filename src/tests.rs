@@ -1,6 +1,7 @@
 use crate::{self as gp, Sign};
 
 // Helper to initialize and terminate geogram
+#[cfg(feature = "legacy")]
 fn setup() {
     // initialize the C++ geogram library
     gp::initialize();
@@ -29,7 +30,6 @@ fn test_orient_2d() {
 
 #[test]
 fn test_orient_3d() {
-    setup();
     let a = [0.0, 0.0, 0.0];
     let b = [1.0, 0.0, 0.0];
     let c = [0.0, 1.0, 0.0];
@@ -41,7 +41,6 @@ fn test_orient_3d() {
     // Flat
     let e = [0.5, 0.5, 0.0];
     assert_eq!(gp::orient_3d(&a, &b, &c, &e), 0);
-    gp::terminate();
 }
 
 #[test]
@@ -73,14 +72,12 @@ fn test_points_identical() {
 
 #[test]
 fn test_points_colinear_3d() {
-    setup();
     let p1 = [0.0, 0.0, 0.0];
     let p2 = [1.0, 1.0, 1.0];
     let p3 = [2.0, 2.0, 2.0];
     assert!(gp::points_are_colinear_3d(&p1, &p2, &p3));
     let p4 = [1.0, 0.0, 0.0];
     assert!(!gp::points_are_colinear_3d(&p1, &p2, &p4));
-    gp::terminate();
 }
 
 #[test]
@@ -143,6 +140,7 @@ fn test_in_sphere_3d_on_border() {
     assert_eq!(gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_on), -1);
 }
 
+#[cfg(feature = "legacy")]
 #[test]
 fn test_det_4d() {
     setup();
