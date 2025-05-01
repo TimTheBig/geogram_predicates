@@ -1,6 +1,6 @@
-use core::cmp::Ordering;
 pub use crate::Expansion;
-use crate::{Point2d, FPG_UNCERTAIN_VALUE};
+use crate::{FPG_UNCERTAIN_VALUE, Point2d};
+use core::cmp::Ordering;
 
 /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
 ///
@@ -119,7 +119,7 @@ fn side3_2dlifted_2d_filter(
         } else if delta3 < -eps {
             int_tmp_result = -1;
         } else {
-           return FPG_UNCERTAIN_VALUE;
+            return FPG_UNCERTAIN_VALUE;
         }
     }
 
@@ -184,9 +184,7 @@ fn side3h_2d_exact_sos(
     [h0, h1, h2, h3]: [f64; 4],
     sos: Option<bool>,
 ) -> i8 {
-    use crate::expansion::{
-        expansion_det2x2, expansion_diff, expansion_product, expansion_sum,
-    };
+    use crate::expansion::{expansion_det2x2, expansion_diff, expansion_product, expansion_sum};
 
     let sos = sos.unwrap_or(true);
 

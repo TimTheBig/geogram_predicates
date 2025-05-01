@@ -3,8 +3,7 @@
 //! A crate for rust interoperability with `geogram`s _robust predicates_; via `cxx`.
 #![no_std]
 
-// #![deny(unused, clippy::missing_const_for_fn)]
-#![warn(clippy::all)]
+#![warn(clippy::all, unused, clippy::missing_const_for_fn)]
 
 #[cfg(test)]
 mod tests;
@@ -318,11 +317,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
     let res = det_3d_filter(a, b, c);
     // FIXME: this breaks tests but it's what geogram does
-    if res == 0 {
-        det_3d_exact(a, b, c)
-    } else {
-        res
-    }
+    if res == 0 { det_3d_exact(a, b, c) } else { res }
 }
 
 #[inline]
@@ -470,10 +465,10 @@ pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bo
     const Q010: [f64; 3] = [0.0, 1.0, 0.0];
     const Q100: [f64; 3] = [1.0, 0.0, 0.0];
 
-    orient_3d(p1, p2, p3, &Q000) == 0 &&
-    orient_3d(p1, p2, p3, &Q001) == 0 &&
-    orient_3d(p1, p2, p3, &Q010) == 0 &&
-    orient_3d(p1, p2, p3, &Q100) == 0
+    orient_3d(p1, p2, p3, &Q000) == 0
+    && orient_3d(p1, p2, p3, &Q001) == 0
+    && orient_3d(p1, p2, p3, &Q010) == 0
+    && orient_3d(p1, p2, p3, &Q100) == 0
 }
 
 /// Tests whether two 2d points are identical.

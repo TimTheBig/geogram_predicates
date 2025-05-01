@@ -6,7 +6,7 @@ name = "geogram_predicates"
 description = "Rust alternitive and bindings to the Geogram library's predicates module"
 version = "0.2.1"
 repository = "https://github.com/glennDittmann/geogram_predicates"
-authors = ["Glenn Dittmann"]
+authors = ["Glenn Dittmann", "TimTheBig"]
 edition = "2024"
 rust-version = "1.85.1"
 

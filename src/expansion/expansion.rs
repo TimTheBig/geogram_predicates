@@ -1,4 +1,4 @@
-use crate::{geo_sign, Sign};
+use crate::{Sign, geo_sign};
 use core::{cmp::Ordering, fmt};
 use heapless::Vec;
 use heapless::Vec as ArrayVec;
@@ -57,7 +57,9 @@ impl<const N: usize> Default for Expansion<N> {
 
 impl<const N: usize> Expansion<N> {
     pub(crate) const fn new() -> Self {
-        Self { data: ArrayVec::new() }
+        Self {
+            data: ArrayVec::new(),
+        }
     }
 
     /// Create a new `Expansion` with the given capacity.
@@ -83,7 +85,9 @@ impl<const N: usize> Expansion<N> {
     pub fn with_capacity(capacity: usize) -> Self {
         debug_assert_eq!(N, capacity);
 
-        Self { data: ArrayVec::<f64, N>::new() }
+        Self {
+            data: ArrayVec::<f64, N>::new(),
+        }
     }
 
     #[inline]
@@ -271,7 +275,11 @@ impl<const N: usize> Expansion<N> {
 
     /// Assign `self` = a + b (expansion sum).
     /// Naively concatenates the two expansions and then calls `optimize`.
-    pub(crate) fn assign_sum<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
+    pub(crate) fn assign_sum<const AN: usize, const BN: usize>(
+        &mut self,
+        a: &Expansion<AN>,
+        b: &Expansion<BN>,
+    ) -> &mut Self {
         self.data.extend_from_slice(a.data()).expect("assert");
         self.data.extend_from_slice(b.data()).expect("assert");
 
@@ -280,9 +288,15 @@ impl<const N: usize> Expansion<N> {
     }
 
     /// Assign `self` = a - b (expansion difference).
-    pub(crate) fn assign_diff<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
+    pub(crate) fn assign_diff<const AN: usize, const BN: usize>(
+        &mut self,
+        a: &Expansion<AN>,
+        b: &Expansion<BN>,
+    ) -> &mut Self {
         // build negated b in a temp
-        let mut nb = Expansion { data: b.data.clone() };
+        let mut nb = Expansion {
+            data: b.data.clone(),
+        };
         nb.negate();
 
         self.assign_sum(a, &nb)
@@ -290,7 +304,11 @@ impl<const N: usize> Expansion<N> {
 
     /// Assign `self` = a * b (expansion product).\
     /// Uses Shewchuk's `two_product` on each coefficient pair.
-    pub(crate) fn assign_product<const AN: usize, const BN: usize>(&mut self, a: &Expansion<AN>, b: &Expansion<BN>) -> &mut Self {
+    pub(crate) fn assign_product<const AN: usize, const BN: usize>(
+        &mut self,
+        a: &Expansion<AN>,
+        b: &Expansion<BN>,
+    ) -> &mut Self {
         const { assert!(N > 1, "N must be greater then 1") };
 
         let cap = Self::product_capacity(a, b);
@@ -421,11 +439,11 @@ impl<const N: usize> Expansion<N> {
         const { assert!(N > 1, "N must be greater then 1"); }
 
         // build product a11 * a22
-        let mut p1: Expansion<N> = Expansion::new();//with_capacity(Expansion::<IN_N>::product_capacity(a11, a22));
+        let mut p1: Expansion<N> = Expansion::new();
         p1.assign_product(a11, a22);
 
         // build product a12 * a21
-        let mut p2: Expansion<N> = Expansion::new();//with_capacity(Expansion::<IN_N>::product_capacity(a12, a21));
+        let mut p2: Expansion<N> = Expansion::new();
         p2.assign_product(a12, a21);
 
         // self = p1 - p2

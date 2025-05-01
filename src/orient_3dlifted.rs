@@ -1,4 +1,4 @@
-use crate::{Expansion, Point3d, FPG_UNCERTAIN_VALUE};
+use crate::{Expansion, FPG_UNCERTAIN_VALUE, Point3d};
 use core::cmp::Ordering;
 
 /// Computes the 4d orientation test with lifted points, i.e the regularity test for 3d.
