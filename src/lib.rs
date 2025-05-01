@@ -366,7 +366,7 @@ const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
 /// ### Returns
 /// The sign of the determinant of the matrix.
 fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
-    let p0_0: Expansion<1> = Expansion::from(p0[0]);
+    let p0_0 = Expansion::from(p0[0]);
     let p0_1 = Expansion::from(p0[1]);
     let p0_2 = Expansion::from(p0[2]);
 
@@ -378,13 +378,13 @@ fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
     let p2_1 = Expansion::from(p2[1]);
     let p2_2 = Expansion::from(p2[2]);
 
-    let delta: Expansion<9> = crate::expansion::expansion_det3x3!(
-        p0_0, p0_1, p0_2,
-        p1_0, p1_1, p1_2,
-        p2_0, p2_1, p2_2
+    let delta: Expansion<24> = crate::expansion::expansion_det3x3!(
+        [p0_0, p0_1, p0_2],
+        [p1_0, p1_1, p1_2],
+        [p2_0, p2_1, p2_2],
     );
 
-    delta.sign().into()
+    delta.sign() as i8
 }
 
 #[cxx::bridge(namespace = "GEOGRAM")]

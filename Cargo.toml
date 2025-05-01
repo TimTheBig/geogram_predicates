@@ -14,9 +14,9 @@ categories = ["no_std", "mathematics"]
 
 [dependencies]
 cxx = { version = "1.0", features = ["alloc", "c++20"], default-features = false }
+heapless = "0.8.0"
 nalgebra = { version = "0.33.2", features = ["macros", "matrixmultiply"], default-features = false }
 robust = "1.1"
-smallvec = { version = "1.15", features = ["const_new"] }
 
 [build-dependencies]
 cxx-build = "1.0"

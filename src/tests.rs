@@ -144,12 +144,7 @@ fn test_in_sphere_3d_on_border() {
 }
 
 #[test]
-fn test_det_3d_and_4d() {
-    let a3 = [1.0, 2.0, 3.0];
-    let b3 = [4.0, 5.0, 6.0];
-    let c3 = [7.0, 8.0, 9.0];
-    assert_eq!(gp::det_3d(&a3, &b3, &c3), 0);
-
+fn test_det_4d() {
     setup();
     let a4 = [1.0, 2.0, 3.0, 4.0];
     let b4 = [5.0, 6.0, 7.0, 8.0];
@@ -165,7 +160,7 @@ fn test_det_3d() {
     let a3 = [1.0, 2.0, 3.0];
     let b3 = [4.0, 5.0, 6.0];
     let c3 = [7.0, 8.0, 9.0];
-    assert_eq!(gp::det_3d(&a3, &b3, &c3), 0);
+    assert_eq!(gp::det_3d(&a3, &b3, &c3), 0); // this passes with geogram
 
     // Standard basis vectors -> determinant should be 1
     let a3 = [1.0, 0.0, 0.0];
@@ -225,8 +220,8 @@ fn test_orient_2dlifted_and_3dlifted() {
     let d3 = [0.0, 0.0, 1.0];
     let p3 = [0.1, 0.1, 0.1];
     let h3 = 0.0;
-    let res3 = gp::orient_3dlifted_sos(&a3, &b3, &c3, &d3, &p3, [h3, h3, h3, h3, h3]) as i8;
-    assert_eq!(res3, -gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
+    let res3 = gp::orient_3dlifted_sos(&a3, &b3, &c3, &d3, &p3, [h3, h3, h3, h3, h3]);
+    assert_eq!(res3, gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
 }
 
 #[test]

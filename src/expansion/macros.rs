@@ -97,25 +97,18 @@ macro_rules! expansion_det3x3 {
 /// ```
 macro_rules! expansion_det2x2 {
     (
-        $a11:expr, $a12:expr,
-        $a21:expr, $a22:expr$(,)?
-    ) => {{
-        // Compute exactly the capacity needed
-        let cap = $crate::Expansion::det2x2_capacity(&$a11, &$a12, &$a21, &$a22);
-        // Allocate an Expansion with that capacity
-        let mut e = $crate::Expansion::with_capacity(cap);
-        // Perform the determinant assignment
-        e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
-        e
-    }};
-    (
         [$a11:expr, $a12:expr],
         [$a21:expr, $a22:expr]$(,)?
     ) => {{
         // Compute exactly the capacity needed
+        #[cfg(debug_assertions)]
         let cap = $crate::Expansion::det2x2_capacity(&$a11, &$a12, &$a21, &$a22);
+
         // Allocate an Expansion with that capacity
-        let mut e = $crate::Expansion::with_capacity(cap);
+        let mut e = $crate::Expansion::new();
+
+        #[cfg(debug_assertions)]
+        debug_assert_eq!(cap, e.capacity());
         // Perform the determinant assignment
         e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
         e
@@ -142,9 +135,10 @@ macro_rules! expansion_diff {
 
 macro_rules! expansion_sum {
     ($a:expr, $b:expr) => {{
-        let capacity = $a.length() + $b.length();
-        let mut expansion = Expansion::with_capacity(capacity);
+        let mut expansion = Expansion::new();
         expansion.assign_sum(&$a, &$b);
+
+        debug_assert_eq!(expansion.data_mut().len(), expansion.data_mut().capacity());
         expansion
     }};
 }
@@ -162,14 +156,14 @@ macro_rules! expansion_sum3 {
 
 macro_rules! expansion_sum4 {
     ($a:expr, $b:expr, $c:expr, $d:expr, $ab_capacity:literal, $cd_capacity:literal) => {{
-        let ab_capacity = $a.length() + $b.length();
-        let mut ab = Expansion::<$ab_capacity>::with_capacity(ab_capacity);
+        // let ab_capacity = $a.length() + $b.length();
+        let mut ab = Expansion::<$ab_capacity>::new();
         ab.assign_sum(&$a, &$b);
 
-        let cd_capacity = $c.length() + $d.length();
-        let mut cd = Expansion::<$cd_capacity>::with_capacity(cd_capacity);
+        // let cd_capacity = $c.length() + $d.length();
+        let mut cd = Expansion::<$cd_capacity>::new();
         cd.assign_sum(&$c, &$d);
-        let mut expansion = Expansion::with_capacity(ab_capacity + cd_capacity);
+        let mut expansion = Expansion::new();
         expansion.assign_sum(&ab, &cd);
         expansion
     }};
@@ -177,7 +171,12 @@ macro_rules! expansion_sum4 {
 
 macro_rules! expansion_product {
     ($a:expr, $b:expr) => {{
-        let mut expansion = Expansion::with_capacity(2);
+        let mut expansion = Expansion::<2>::new();
+        expansion.assign_product(&$a, &$b);
+        expansion
+    }};
+    ($a:expr, $b:expr, $res_cap:literal) => {{
+        let mut expansion = Expansion::<$res_cap>::new();
         expansion.assign_product(&$a, &$b);
         expansion
     }};

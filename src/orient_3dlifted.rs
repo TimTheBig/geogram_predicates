@@ -263,13 +263,11 @@ fn side4h_3d_exact_sos<const SOS: bool>(
     let a43 = expansion_diff!(p4[2], p0[2]);
     let a44 = expansion_diff!(h0, h4);
 
-    // Note: we could probably reuse some of the 2x2 co-factors
-    // (but for now I'd rather keep this form that is easier to
-    //  read ... and to debug if need be !)
-    let delta1: Expansion = expansion_det3x3!(a21, a22, a23, a31, a32, a33, a41, a42, a43);
-    let delta2: Expansion = expansion_det3x3!(a11, a12, a13, a31, a32, a33, a41, a42, a43);
-    let delta3: Expansion = expansion_det3x3!(a11, a12, a13, a21, a22, a23, a41, a42, a43);
-    let delta4: Expansion = expansion_det3x3!(a11, a12, a13, a21, a22, a23, a31, a32, a33);
+    // This could probably reuse some of the 2x2 co-factors, but this is easier to read
+    let delta1: Expansion<6> = expansion_det3x3!(a21, a22, a23, a31, a32, a33, a41, a42, a43);
+    let delta2: Expansion<6> = expansion_det3x3!(a11, a12, a13, a31, a32, a33, a41, a42, a43);
+    let delta3: Expansion<6> = expansion_det3x3!(a11, a12, a13, a21, a22, a23, a41, a42, a43);
+    let delta4: Expansion<6> = expansion_det3x3!(a11, a12, a13, a21, a22, a23, a31, a32, a33);
 
     let delta4_sign = delta4.sign();
     debug_assert!(delta4_sign != 0);
@@ -293,7 +291,7 @@ fn side4h_3d_exact_sos<const SOS: bool>(
             if p_sort[i] == p0 {
                 let z1: Expansion<2> = expansion_diff!(Expansions: delta2, delta1);
                 let z2: Expansion<2> = expansion_diff!(Expansions: delta4, delta3);
-                let z: Expansion<4> = expansion_sum!(z1, z2);
+                let z: Expansion<1> = expansion_sum!(z1, z2);
                 let z_sign = z.sign();
                 if z_sign != 0 {
                     return delta4_sign * z_sign;
