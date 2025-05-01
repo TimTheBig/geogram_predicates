@@ -1,5 +1,6 @@
 [workspace]
 members = ["test_utils"]
+resolver = "2"
 
 [package]
 name = "geogram_predicates"

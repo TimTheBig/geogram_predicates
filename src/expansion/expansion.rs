@@ -1,6 +1,5 @@
 use crate::{Sign, geo_sign};
 use core::{cmp::Ordering, fmt};
-use heapless::Vec;
 use heapless::Vec as ArrayVec;
 
 #[derive(Clone, Debug)]
@@ -64,7 +63,7 @@ impl<const N: usize> Expansion<N> {
 
     /// Create a new `Expansion` with the given capacity.
     ///
-    /// Internally uses a [`heapless::Vec<[f64; 9]>`](`heapless::Vec`).
+    /// Internally uses a [`heapless::Vec<f64, N>`](`heapless::Vec`).
     ///
     /// ## Parameters
     /// - `capacity`: maximum number of components, if this is less then the inline capacity it will still be 9.
@@ -248,7 +247,7 @@ impl<const N: usize> From<[f64; N]> for Expansion<N> {
     fn from(arr: [f64; N]) -> Self {
         Expansion {
             // SAFE: arr len is == N
-            data: unsafe { Vec::from_slice(&arr).unwrap_unchecked() },
+            data: unsafe { ArrayVec::from_slice(&arr).unwrap_unchecked() },
         }
     }
 }
