@@ -3,14 +3,14 @@ members = ["test_utils"]
 
 [package]
 name = "geogram_predicates"
-description = "Rust alternitive and bindings to the Geogram library's predicates module"
+description = "Rust alternative and bindings to the Geogram library's predicates module"
 version = "0.2.1"
 repository = "https://github.com/glennDittmann/geogram_predicates"
 authors = ["Glenn Dittmann", "TimTheBig"]
 edition = "2024"
 rust-version = "1.85.1"
 
-license = "Apache-2.0"
+license = "LGPL-3.0"
 keywords = ["computer-graphics", "math", "geometry", "predicates", "robust"]
 categories = ["no-std::no-alloc", "mathematics", "graphics"]
 
