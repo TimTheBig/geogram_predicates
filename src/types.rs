@@ -45,10 +45,9 @@ impl core::ops::Neg for Sign {
     type Output = Sign;
 
     fn neg(self) -> Self::Output {
-        match self {
-            Sign::Zero => self,
-            Sign::Positive => Sign::Negative,
-            Sign::Negative => Sign::Positive,
-        }
+        // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so this is safe
+        unsafe { core::mem::transmute::<i8, Sign>(
+            -(core::mem::transmute::<Sign, i8>(self))
+        ) }
     }
 }
