@@ -1,12 +1,17 @@
 # Geogram Predicates
-A rust alternative and interoperability ffi with `geogram`s _robust predicates_; via `cxx`.
+A Rust port of `geogram`s _robust predicates_.
+An interoperability ffi with `geogram`s _robust predicates_; via `cxx` also available.
+
+<details>
+  <summary><h4>Why Geogram</h4></summary>
 
 Geogram is a scientifically proven, well-documented, feature-rich geometry processing library, which leverages _"[...] arithmetic filters (Meyer and Pion), expansion arithmetics (Shewchuk) and simulation of simplicity (Edelsbrunner)."_ <br>
 Be sure to check it out [here](https://github.com/BrunoLevy/geogram).
 
 It yields easy access to dependency-free parts of its code base, as so called _Pluggable Software Modules_ (PSM), which in turn make it easy to write `cxx_bridges` for these.
+</details>
 
-This library is licenced under the LGPL-3.0, when the legacy feature is enabled it uses code under Apache-2.0.
+This library is licenced under the LGPL-3.0, when the legacy feature is enabled the c++ code it uses is under Apache-2.0.
 
 ## Example
 
@@ -89,6 +94,8 @@ feel free to open a PR to address this.
 ## Acknowledgements
 Credits go to [geogram](https://github.com/BrunoLevy/geogram)
  and [cxx](https://github.com/dtolnay/cxx), which made this project possible.
+
+B.Levy for making the original geogram library.
 
 Also [georust/robust](https://github.com/georust/robust) should be mentioned, for helping set up the examples, their visualizations, and use in the codebase.
 
