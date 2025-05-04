@@ -29,7 +29,7 @@ pub use orient_3dlifted::orient_3dlifted_sos;
 pub type Point3d = [f64; 3];
 pub type Point2d = [f64; 2];
 
-pub(crate) const FPG_UNCERTAIN_VALUE: i8 = 0;
+pub(crate) const FPG_UNCERTAIN_VALUE: Sign = Sign::Zero;
 
 /// Gets the sign of a value.
 ///
@@ -48,7 +48,7 @@ pub(crate) const FPG_UNCERTAIN_VALUE: i8 = 0;
 /// assert_eq!(geo_sign(b), Sign::Negative);
 /// assert_eq!(geo_sign(c), Sign::Zero);
 /// ```
-#[inline]
+#[inline(always)]
 #[must_use]
 pub const fn geo_sign(value: f64) -> Sign {
     if value > 0.0 {
@@ -68,9 +68,9 @@ pub const fn geo_sign(value: f64) -> Sign {
 /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
 ///
 /// ### Return values
-/// * `+1` - if the tetrahedron is oriented positively
-/// * `0` - if the tetrahedron is flat
-/// * `-1` - if the tetrahedron is oriented negatively
+/// * `Positive` - if the tetrahedron is oriented positively
+/// * `Zero` - if the tetrahedron is flat
+/// * `Negative` - if the tetrahedron is oriented negatively
 ///
 /// # Example
 /// ```
@@ -84,20 +84,15 @@ pub const fn geo_sign(value: f64) -> Sign {
 ///
 /// assert_eq!(1, orient_3d(&a, &b, &c, &d));
 ///```
-pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
+pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
     let orientation = robust::orient3d(
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*c) },
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*d) },
     );
-    if orientation > 0.0 {
-        -1
-    } else if orientation < 0.0 {
-        1
-    } else {
-        0
-    }
+
+    geo_sign(-orientation)
 }
 
 /// Computes the orientation predicate in 2d.
@@ -108,13 +103,13 @@ pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
 /// - `a`, `b`, `c` vertices of the triangle
 ///
 /// ### Return values
-/// * `+1` - if the triangle is oriented counter-clockwise
-/// * `0` - if the triangle is flat
-/// * `-1` - if the triangle is oriented clockwise
+/// * `Positive` - if the triangle is oriented counter-clockwise
+/// * `Zero` - if the triangle is flat
+/// * `Negative` - if the triangle is oriented clockwise
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::orient_2d;
+/// use geogram_predicates::{Sign, orient_2d};
 ///
 /// // Define three points that form a triangle
 /// let a = [0.0, 0.0];
@@ -122,21 +117,16 @@ pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> i8 {
 /// let c = [1.0, 1.0];
 ///
 /// let orientation = orient_2d(&a, &b, &c);
-/// assert_eq!(1, orientation);
+/// assert_eq!(Sign::Positive, orientation);
 /// ```
-pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> i8 {
+pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> Sign {
     let orientation = robust::orient2d(
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*b) },
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*c) },
     );
-    if orientation > 0.0 {
-        1
-    } else if orientation < 0.0 {
-        -1
-    } else {
-        0
-    }
+
+    geo_sign(orientation)
 }
 
 /// Computes the sign of the dot product between two vectors.
@@ -175,16 +165,16 @@ pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
 /// ### Parameters
 /// - `a`, `b`, `c` vertices of the triangle
 /// - `p` point to test
-/// - `PERTURB` (const) - true is `+1` false is `-1` consistent perturbation
+/// - `PERTURB` (const) - true is `Positive` false is `Negative` consistent perturbation
 ///
 /// ### Return values
-/// * `+1` - if `p` is inside the circum-circle of `a`, `b`, `c`
-/// * `-1` - if `p` is outside the circum-circle of `a`, `b`, `c`
-/// * `PERTURB` - if `p` is exactly on the circum-circle of the triangle `a`, `b`, `c`, where `perturb()` denotes a consistent perturbation, that returns either `+1` or `-1`
+/// * `Positive` - if `p` is inside the circum-circle of `a`, `b`, `c`
+/// * `Negative` - if `p` is outside the circum-circle of `a`, `b`, `c`
+/// * `PERTURB` - if `p` is exactly on the circum-circle of the triangle `a`, `b`, `c`, where `perturb()` denotes a consistent perturbation, that returns either `Positive` or `Negative`
 ///
 /// # Example
 /// ```
-/// use geogram_predicates as gp;
+/// use geogram_predicates::{Sign, in_circle_2d_sos};
 ///
 /// // Define three points that form a triangle
 /// let a = [0.0, 0.0];
@@ -195,17 +185,17 @@ pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
 /// let p_in = [1.0, -0.4];
 /// let p_out = [1.0, -1.2];
 ///
-/// let is_in_circle_p_in = gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_in);
-/// assert_eq!(1, is_in_circle_p_in);
-/// # let is_in_circle_p_in = gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_in);
-/// # assert_eq!(1, is_in_circle_p_in);
+/// let is_in_circle_p_in = in_circle_2d_sos::<false>(&a, &b, &c, &p_in);
+/// assert_eq!(Sign::Positive, is_in_circle_p_in);
+/// # let is_in_circle_p_in = in_circle_2d_sos::<true>(&a, &b, &c, &p_in);
+/// # assert_eq!(Sign::Positive, is_in_circle_p_in);
 ///
-/// let is_in_circle_p_out = gp::in_circle_2d_sos::<true>(&a, &b, &c, &p_out);
-/// assert_eq!(-1, is_in_circle_p_out);
-/// # let is_in_circle_p_out = gp::in_circle_2d_sos::<false>(&a, &b, &c, &p_out);
-/// # assert_eq!(-1, is_in_circle_p_out);
+/// let is_in_circle_p_out = in_circle_2d_sos::<true>(&a, &b, &c, &p_out);
+/// assert_eq!(Sign::Negative, is_in_circle_p_out);
+/// # let is_in_circle_p_out = in_circle_2d_sos::<false>(&a, &b, &c, &p_out);
+/// # assert_eq!(Sign::Negative, is_in_circle_p_out);
 /// ```
-pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point2d, p: &Point2d) -> i8 {
+pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point2d, p: &Point2d) -> Sign {
     let incircle = robust::incircle(
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*b) },
@@ -214,11 +204,11 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
     );
 
     if incircle > 0.0 {
-        1
+        Sign::Positive
     } else if incircle < 0.0 {
-        -1
+        Sign::Negative
     } else {
-        const { if PERTURB { 1 } else { -1 } }
+        const { if PERTURB { Sign::Positive } else { Sign::Negative } }
     }
 }
 
@@ -227,16 +217,16 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 /// ### Parameters
 /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
 /// - `p` point to test
-/// - `PERTURB` (const) - what it should be if `p` is exactly on the circum-sphere, true is `+1`, false is `-1`
+/// - `PERTURB` (const) - what it should be if `p` is exactly on the circum-sphere, true is `Positive`, false is `Negative`
 ///
 /// ### Return values
-/// * `-1` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
-/// * `+1` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
-/// * `PERTURB` - if `p` is exactly on the circum-sphere of the tetrahedron `a`, `b`, `c`, `d`, where `perturb()` denotes a consistent perturbation, that returns either `+1` or `-1`
+/// * `Negative` - if `p` is inside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `Positive` - if `p` is outside the circum-sphere of `a`, `b`, `c`, `d`
+/// * `PERTURB` - if `p` is exactly on the circum-sphere of the tetrahedron `a`, `b`, `c`, `d`, where `perturb` denotes a consistent perturbation, that returns either `Positive` or `Negative`
 ///
 /// # Example
 /// ```
-/// use geogram_predicates as gp;
+/// use geogram_predicates::{Sign, in_sphere_3d_sos};
 ///
 /// // Define four points that form a tetrahedron
 /// let a = [0.0, 0.0, 0.0];
@@ -246,12 +236,12 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 ///
 /// // Define two points, to test against the tetrahedrons circum-sphere
 /// let p_in = [0.75, 0.75, 0.5];
-/// assert_eq!(-1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in));
-/// # assert_eq!(-1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in));
+/// assert_eq!(Sign::Negative, in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_in));
+/// # assert_eq!(Sign::Negative, in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_in));
 ///
 /// let p_out = [0.75, 0.75, 1.5];
-/// assert_eq!(1, gp::in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
-/// # assert_eq!(1, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
+/// assert_eq!(1, in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
+/// # assert_eq!(1, in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
 /// ```
 pub fn in_sphere_3d_sos<const PERTURB: bool>(
     a: &Point3d,
@@ -259,7 +249,8 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
     c: &Point3d,
     d: &Point3d,
     p: &Point3d,
-) -> i8 {
+) -> Sign {
+    // this keeps the orientation in order as per robust docs
     // let insphere = if orient_3d(a, b, c, d) == 1 {
     //     robust::insphere(
     //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
@@ -277,6 +268,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
     //         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*p) },
     //     )
     // };
+
     let insphere = robust::insphere(
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*b) },
@@ -286,11 +278,11 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
     );
 
     if insphere > 0.0 {
-        1
+        Sign::Positive
     } else if insphere < 0.0 {
-        -1
+        Sign::Negative
     } else {
-        const { if PERTURB { 1 } else { -1 } }
+        const { if PERTURB { Sign::Positive } else { Sign::Negative } }
     }
 }
 
@@ -344,7 +336,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 //     }
 
 //     if lower_bound_1 < 1.92663387981871579179e-98 || upper_bound_1 > 1.11987237108890185662e+102 {
-//         FPG_UNCERTAIN_VALUE
+//         FPG_UNCERTAIN_VALUE as i8
 //     } else {
 //         let eps = 3.11133555671680765034e-15 * ((max2 * max3) * max1);
 //         if delta > eps {
@@ -352,7 +344,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 //         } else if delta < -eps {
 //             -1
 //         } else {
-//             FPG_UNCERTAIN_VALUE
+//             FPG_UNCERTAIN_VALUE as i8
 //         }
 //     }
 // }
@@ -390,12 +382,6 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 #[cfg(feature = "legacy")]
 #[cxx::bridge(namespace = "GEOGRAM")]
 mod geogram_ffi {
-    // Shared structs with fields visible to both languages.
-    // ...
-
-    // Rust types and signatures exposed to C++.
-    // ...
-
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {
         include!("geogram_predicates/include/geogram_ffi.h");
@@ -481,7 +467,6 @@ mod geogram_ffi {
 pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool {
     // Colinearity is tested by using four coplanarity
     // tests with four points that are not coplanar.
-    // TODO: use PCK::aligned_3d() instead (to be tested)
     const Q000: [f64; 3] = [0.0, 0.0, 0.0];
     const Q001: [f64; 3] = [0.0, 0.0, 1.0];
     const Q010: [f64; 3] = [0.0, 1.0, 0.0];
@@ -547,9 +532,9 @@ pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
 /// - `a`, `b`, `c`, `d` vertices of the tetrahedron
 ///
 /// ### Return values
-/// * `+1` - if the tetrahedron is oriented positively
-/// * `0` - if the tetrahedron is flat
-/// * `-1` - if the tetrahedron is oriented negatively
+/// * `Positive` - if the tetrahedron is oriented positively
+/// * `Zero` - if the tetrahedron is flat
+/// * `Negative` - if the tetrahedron is oriented negatively
 ///
 /// # Example
 /// ```

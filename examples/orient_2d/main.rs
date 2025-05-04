@@ -16,7 +16,7 @@ fn main() {
 
     let predicate: Box<dyn Fn([f64; 2]) -> f64> = match mode {
         "naive" => Box::new(|p| naive_orient_2d(&p1, &p, &p2)),
-        "robust" => Box::new(|p| orient_2d(&p1, &p, &p2).into()),
+        "robust" => Box::new(|p| (orient_2d(&p1, &p, &p2) as i8).into()),
         "clean" => {
             let _ = fs::remove_file("out_naive_orient_2d.png");
             let _ = fs::remove_file("out_robust_orient_2d.png");

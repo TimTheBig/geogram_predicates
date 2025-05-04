@@ -1,4 +1,4 @@
-use crate::{Expansion, FPG_UNCERTAIN_VALUE, Point3d};
+use crate::{Expansion, Point3d, Sign, FPG_UNCERTAIN_VALUE};
 use core::cmp::Ordering;
 
 /// Computes the 4d orientation test with lifted points, i.e the regularity test for 3d.
@@ -60,7 +60,7 @@ pub fn orient_3dlifted_sos(
     d: &[f64; 3],
     p: &[f64; 3],
     [h_a, h_b, h_c, h_d, h_p]: [f64; 5],
-) -> i8 {
+) -> Sign {
     let mut result = side4h_3d_filter(a, b, c, d, p, [h_a, h_b, h_c, h_d, h_p]);
     if result == 0 {
         result = side4h_3d_exact_sos::<true>(a, b, c, d, p, [h_a, h_b, h_c, h_d, h_p]);
@@ -78,7 +78,7 @@ fn side4h_3d_filter(
     p3: &[f64; 3],
     p4: &[f64; 3],
     [h0, h1, h2, h3, h4]: [f64; 5],
-) -> i8 {
+) -> Sign {
     let a11 = p1[0] - p0[0];
     let a12 = p1[1] - p0[1];
     let a13 = p1[2] - p0[2];
@@ -159,16 +159,16 @@ fn side4h_3d_filter(
         }
         eps = 5.11071278299732992696e-15 * ((max2 * max3) * max1);
         if delta4 > eps {
-            int_tmp_result = 1;
+            int_tmp_result = Sign::Positive;
         } else if delta4 < -eps {
-            int_tmp_result = -1;
+            int_tmp_result = Sign::Negative;
         } else {
             return FPG_UNCERTAIN_VALUE;
         }
     }
 
     let delta4_sign = int_tmp_result;
-    let int_tmp_result_ffwkcaa;
+    let int_tmp_result_ffwkcaa: Sign;
     let mut max4 = max1;
     if max4 < a41.abs() {
         max4 = a41.abs();
@@ -220,9 +220,9 @@ fn side4h_3d_filter(
         }
         eps = 3.17768858673611390687e-14 * (((max5 * max7) * max4) * max6);
         if r > eps {
-            int_tmp_result_ffwkcaa = 1;
+            int_tmp_result_ffwkcaa = Sign::Positive;
         } else if r < -eps {
-            int_tmp_result_ffwkcaa = -1;
+            int_tmp_result_ffwkcaa = Sign::Negative;
         } else {
             return FPG_UNCERTAIN_VALUE;
         }
@@ -238,7 +238,7 @@ fn side4h_3d_exact_sos<const SOS: bool>(
     p3: &[f64; 3],
     p4: &[f64; 3],
     [h0, h1, h2, h3, h4]: [f64; 5],
-) -> i8 {
+) -> Sign {
     use crate::expansion::{
         expansion_det3x3, expansion_diff, expansion_product, expansion_sum, expansion_sum4,
     };
@@ -312,7 +312,7 @@ fn side4h_3d_exact_sos<const SOS: bool>(
                     return delta4_sign * delta3_sign;
                 }
             } else if p_sort[i] == p4 {
-                return -1;
+                return Sign::Negative;
             }
         }
     }

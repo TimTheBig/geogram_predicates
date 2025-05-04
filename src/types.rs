@@ -15,6 +15,24 @@ impl From<Sign> for i8 {
     }
 }
 
+impl TryFrom<i8> for Sign {
+    type Error = ();
+
+    /// Converts `+1`, `0`, `-1` to a `Sign` with the same memory layout,
+    /// if input is another number an it's an error
+    fn try_from(i8: i8) -> Result<Sign, ()> {
+        if i8 == 1 {
+            Ok(Sign::Positive)
+        } else if i8 == -1 {
+            Ok(Sign::Negative)
+        } else if i8 == 0 {
+            Ok(Sign::Zero)
+        } else {
+            Err(())
+        }
+    }
+}
+
 impl PartialEq<i8> for Sign {
     fn eq(&self, other: &i8) -> bool {
         (self.clone() as i8) == *other
@@ -34,10 +52,13 @@ impl PartialOrd<i8> for Sign {
 }
 
 impl core::ops::Mul for Sign {
-    type Output = i8;
+    type Output = Sign;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        (self as i8) * (rhs as i8)
+        // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so the product must be (1, 0, -1)
+        unsafe { core::mem::transmute::<i8, Sign>(
+            (self as i8) * (rhs as i8)
+        ) }
     }
 }
 
@@ -47,7 +68,7 @@ impl core::ops::Neg for Sign {
     fn neg(self) -> Self::Output {
         // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so this is safe
         unsafe { core::mem::transmute::<i8, Sign>(
-            -(core::mem::transmute::<Sign, i8>(self))
+            -(self as i8)
         ) }
     }
 }

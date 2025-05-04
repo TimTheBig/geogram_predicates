@@ -1,5 +1,5 @@
 pub use crate::Expansion;
-use crate::{FPG_UNCERTAIN_VALUE, Point2d};
+use crate::{Point2d, Sign, FPG_UNCERTAIN_VALUE};
 use core::cmp::Ordering;
 
 /// Computes the 3d orientation test with lifted points, i.e the regularity test for 2d.
@@ -57,7 +57,7 @@ pub fn orient_2dlifted_sos(
     c: &Point2d,
     p: &Point2d,
     [h_a, h_b, h_c, h_p]: [f64; 4],
-) -> i8 {
+) -> Sign {
     let mut result = side3_2dlifted_2d_filter(a, b, c, p, [h_a, h_b, h_c, h_p]);
     if result == 0 {
         result = side3h_2d_exact_sos(a, b, c, p, [h_a, h_b, h_c, h_p], None);
@@ -73,7 +73,7 @@ fn side3_2dlifted_2d_filter(
     p2: &Point2d,
     p3: &Point2d,
     [h0, h1, h2, h3]: [f64; 4],
-) -> i8 {
+) -> Sign {
     let a11 = p1[0] - p0[0];
     let a12 = p1[1] - p0[1];
     let a13 = h0 - h1;
@@ -115,9 +115,9 @@ fn side3_2dlifted_2d_filter(
         }
         eps = 8.88720573725927976811e-16 * (max1 * max2);
         if delta3 > eps {
-            int_tmp_result = 1;
+            int_tmp_result = Sign::Positive;
         } else if delta3 < -eps {
-            int_tmp_result = -1;
+            int_tmp_result = Sign::Negative;
         } else {
             return FPG_UNCERTAIN_VALUE;
         }
@@ -165,9 +165,9 @@ fn side3_2dlifted_2d_filter(
         }
         eps = 5.11071278299732992696e-15 * ((max3 * max5) * max4);
         if r > eps {
-            int_tmp_result_ffwkcaa = 1;
+            int_tmp_result_ffwkcaa = Sign::Positive;
         } else if r < -eps {
-            int_tmp_result_ffwkcaa = -1;
+            int_tmp_result_ffwkcaa = Sign::Negative;
         } else {
             return FPG_UNCERTAIN_VALUE;
         }
@@ -183,7 +183,7 @@ fn side3h_2d_exact_sos(
     p3: &Point2d,
     [h0, h1, h2, h3]: [f64; 4],
     sos: Option<bool>,
-) -> i8 {
+) -> Sign {
     use crate::expansion::{expansion_det2x2, expansion_diff, expansion_product, expansion_sum};
 
     let sos = sos.unwrap_or(true);
@@ -212,7 +212,7 @@ fn side3h_2d_exact_sos(
     r_2.negate();
     let r_3: Expansion<4> = expansion_product!(delta3, a33, 4);
     let r: Expansion<6> = {
-        let capacity = r_1.length() + r_2.length();
+        // capacity is `r_1.length() + r_2.length()` which is 4
         let mut ab: Expansion<4> = Expansion::new();
         ab.assign_sum(&r_1, &r_2);
         let mut expansion: Expansion<6> = Expansion::new();
@@ -250,7 +250,7 @@ fn side3h_2d_exact_sos(
                     return (-delta3_sign) * delta2_sign;
                 }
             } else if p_sort[i] == p3 {
-                return -1;
+                return Sign::Negative;
             }
         }
     }
