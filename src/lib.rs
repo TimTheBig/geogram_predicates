@@ -1,6 +1,9 @@
 //! # Geogram Predicates
 //!
-//! A crate for rust interoperability with `geogram`s _robust predicates_; via `cxx`.
+//! A Rust port of `geogram`s _robust predicates_.
+//! An interoperability ffi with `geogram`s _robust predicates_; via `cxx` also available in the `legacy` feature.
+//!
+//! All functions are in written in Rust, except for `det_3d` and `det_4d` which are only available in `legacy`.
 #![no_std]
 
 #![warn(clippy::all, unused, clippy::missing_const_for_fn)]
