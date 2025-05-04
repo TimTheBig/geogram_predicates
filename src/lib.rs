@@ -294,98 +294,98 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
     }
 }
 
-/// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
-///
-/// ### Parameters
-/// - `a`, `b`, `c` the three points that form the matrix
-///
-/// ### Returns
-/// - the sign of the determinant of the matrix
-///
-/// # Example
-/// ```
-/// use geogram_predicates as gp;
-///
-/// // Define three points that form a matrix
-/// let a = [1.0, 2.0, 3.0];
-/// let b = [4.0, 5.0, 6.0];
-/// let c = [7.0, 8.0, 9.0];
-///
-/// let det = gp::det_3d(&a, &b, &c);
-/// assert_eq!(det, 0);
-/// ```
-pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
-    let res = det_3d_filter(a, b, c);
-    // FIXME: this breaks tests but it's what geogram does
-    if res == 0 { det_3d_exact(a, b, c) } else { res }
-}
+// /// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
+// ///
+// /// ### Parameters
+// /// - `a`, `b`, `c` the three points that form the matrix
+// ///
+// /// ### Returns
+// /// - the sign of the determinant of the matrix
+// ///
+// /// # Example
+// /// ```
+// /// use geogram_predicates as gp;
+// ///
+// /// // Define three points that form a matrix
+// /// let a = [1.0, 2.0, 3.0];
+// /// let b = [4.0, 5.0, 6.0];
+// /// let c = [7.0, 8.0, 9.0];
+// ///
+// /// let det = gp::det_3d(&a, &b, &c);
+// /// assert_eq!(det, 0);
+// /// ```
+// pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
+//     let res = det_3d_filter(a, b, c);
+//     // FIXME: this breaks tests but it's what geogram does
+//     if res == 0 { det_3d_exact(a, b, c) } else { res }
+// }
 
-#[inline]
-const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
-    let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
-        + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
+// #[inline]
+// const fn det_3d_filter(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
+//     let delta = ((p0[0] * ((p1[1] * p2[2]) - (p1[2] * p2[1]))) - (p1[0] * ((p0[1] * p2[2]) - (p0[2] * p2[1]))))
+//         + (p2[0] * ((p0[1] * p1[2]) - (p0[2] * p1[1])));
 
-    let max1 = p0[0].abs().max(p1[0].abs()).max(p2[0].abs());
-    let max2 = p0[1].abs().max(p0[2].abs()).max(p1[1].abs()).max(p1[2].abs());
-    let max3 = p1[1].abs().max(p1[2].abs()).max(p2[1].abs()).max(p2[2].abs());
+//     let max1 = p0[0].abs().max(p1[0].abs()).max(p2[0].abs());
+//     let max2 = p0[1].abs().max(p0[2].abs()).max(p1[1].abs()).max(p1[2].abs());
+//     let max3 = p1[1].abs().max(p1[2].abs()).max(p2[1].abs()).max(p2[2].abs());
 
-    let mut lower_bound_1 = max1;
-    let mut upper_bound_1 = max1;
+//     let mut lower_bound_1 = max1;
+//     let mut upper_bound_1 = max1;
 
-    if max2 < lower_bound_1 {
-        lower_bound_1 = max2;
-    } else if max2 > upper_bound_1 {
-        upper_bound_1 = max2;
-    }
-    if max3 < lower_bound_1 {
-        lower_bound_1 = max3;
-    } else if max3 > upper_bound_1 {
-        upper_bound_1 = max3;
-    }
+//     if max2 < lower_bound_1 {
+//         lower_bound_1 = max2;
+//     } else if max2 > upper_bound_1 {
+//         upper_bound_1 = max2;
+//     }
+//     if max3 < lower_bound_1 {
+//         lower_bound_1 = max3;
+//     } else if max3 > upper_bound_1 {
+//         upper_bound_1 = max3;
+//     }
 
-    if lower_bound_1 < 1.92663387981871579179e-98 || upper_bound_1 > 1.11987237108890185662e+102 {
-        FPG_UNCERTAIN_VALUE
-    } else {
-        let eps = 3.11133555671680765034e-15 * ((max2 * max3) * max1);
-        if delta > eps {
-            1
-        } else if delta < -eps {
-            -1
-        } else {
-            FPG_UNCERTAIN_VALUE
-        }
-    }
-}
+//     if lower_bound_1 < 1.92663387981871579179e-98 || upper_bound_1 > 1.11987237108890185662e+102 {
+//         FPG_UNCERTAIN_VALUE
+//     } else {
+//         let eps = 3.11133555671680765034e-15 * ((max2 * max3) * max1);
+//         if delta > eps {
+//             1
+//         } else if delta < -eps {
+//             -1
+//         } else {
+//             FPG_UNCERTAIN_VALUE
+//         }
+//     }
+// }
 
-/// Computes the sign of the determinant of a 3x3
-/// matrix formed by three 3d points using exact arithmetics.
-///
-/// ### Parameters
-/// p0 , p1 , p2 the three points
-///
-/// ### Returns
-/// The sign of the determinant of the matrix.
-fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
-    let p0_0 = Expansion::from(p0[0]);
-    let p0_1 = Expansion::from(p0[1]);
-    let p0_2 = Expansion::from(p0[2]);
+// /// Computes the sign of the determinant of a 3x3
+// /// matrix formed by three 3d points using exact arithmetics.
+// ///
+// /// ### Parameters
+// /// p0 , p1 , p2 the three points
+// ///
+// /// ### Returns
+// /// The sign of the determinant of the matrix.
+// fn det_3d_exact(p0: &Point3d, p1: &Point3d, p2: &Point3d) -> i8 {
+//     let p0_0 = Expansion::from(p0[0]);
+//     let p0_1 = Expansion::from(p0[1]);
+//     let p0_2 = Expansion::from(p0[2]);
 
-    let p1_0 = Expansion::from(p1[0]);
-    let p1_1 = Expansion::from(p1[1]);
-    let p1_2 = Expansion::from(p1[2]);
+//     let p1_0 = Expansion::from(p1[0]);
+//     let p1_1 = Expansion::from(p1[1]);
+//     let p1_2 = Expansion::from(p1[2]);
 
-    let p2_0 = Expansion::from(p2[0]);
-    let p2_1 = Expansion::from(p2[1]);
-    let p2_2 = Expansion::from(p2[2]);
+//     let p2_0 = Expansion::from(p2[0]);
+//     let p2_1 = Expansion::from(p2[1]);
+//     let p2_2 = Expansion::from(p2[2]);
 
-    let delta: Expansion<24> = crate::expansion::expansion_det3x3!(
-        [p0_0, p0_1, p0_2],
-        [p1_0, p1_1, p1_2],
-        [p2_0, p2_1, p2_2],
-    );
+//     let delta: Expansion<24> = crate::expansion::expansion_det3x3!(
+//         [p0_0, p0_1, p0_2],
+//         [p1_0, p1_1, p1_2],
+//         [p2_0, p2_1, p2_2],
+//     );
 
-    delta.sign() as i8
-}
+//     delta.sign() as i8
+// }
 
 #[cfg(feature = "legacy")]
 #[cxx::bridge(namespace = "GEOGRAM")]
@@ -422,6 +422,28 @@ mod geogram_ffi {
         /// assert_eq!(det, 0);
         /// ```
         fn det_4d(a: &[f64; 4], b: &[f64; 4], c: &[f64; 4], d: &[f64; 4]) -> i16;
+
+        /// Computes the sign of the determinant of a 3x3 matrix formed by three 3D points.
+        ///
+        /// ### Parameters
+        /// - `a`, `b`, `c` the three points that form the matrix
+        ///
+        /// ### Returns
+        /// - the sign of the determinant of the matrix
+        ///
+        /// # Example
+        /// ```
+        /// use geogram_predicates as gp;
+        ///
+        /// // Define three points that form a matrix
+        /// let a = [1.0, 2.0, 3.0];
+        /// let b = [4.0, 5.0, 6.0];
+        /// let c = [7.0, 8.0, 9.0];
+        ///
+        /// let det = gp::det_3d(&a, &b, &c);
+        /// assert_eq!(det, 0);
+        /// ```
+        fn det_3d(a: &[f64; 3], b: &[f64; 3], c: &[f64; 3]) -> i16;
 
         /// Needs to be called before using any predicate.
         fn initialize();

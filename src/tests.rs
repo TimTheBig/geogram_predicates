@@ -152,8 +152,10 @@ fn test_det_4d() {
     gp::terminate();
 }
 
+#[cfg(feature = "legacy")]
 #[test]
 fn test_det_3d() {
+    setup();
     // Linearly dependent vectors -> determinant should be 0
     let a3 = [1.0, 2.0, 3.0];
     let b3 = [4.0, 5.0, 6.0];
@@ -198,6 +200,7 @@ fn test_det_3d() {
     let b = [0.0,  1e25, 0.0];
     let c = [0.0,  0.0, -1e25];
     assert_eq!(gp::det_3d(&a, &b, &c), -1);
+    gp::terminate();
 }
 
 #[test]
