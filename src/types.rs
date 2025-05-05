@@ -54,6 +54,7 @@ impl PartialOrd<i8> for Sign {
 impl core::ops::Mul for Sign {
     type Output = Sign;
 
+    #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so the product must be (1, 0, -1)
         unsafe { core::mem::transmute::<i8, Sign>(
@@ -65,6 +66,7 @@ impl core::ops::Mul for Sign {
 impl core::ops::Neg for Sign {
     type Output = Sign;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so this is safe
         unsafe { core::mem::transmute::<i8, Sign>(

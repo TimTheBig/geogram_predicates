@@ -87,6 +87,7 @@ pub const fn geo_sign(value: f64) -> Sign {
 ///
 /// assert_eq!(1, orient_3d(&a, &b, &c, &d));
 ///```
+#[must_use]
 pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
     let orientation = robust::orient3d(
         unsafe { core::mem::transmute::<Point3d, Coord3D<f64>>(*a) },
@@ -122,6 +123,7 @@ pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
 /// let orientation = orient_2d(&a, &b, &c);
 /// assert_eq!(Sign::Positive, orientation);
 /// ```
+#[must_use]
 pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> Sign {
     let orientation = robust::orient2d(
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
@@ -152,6 +154,7 @@ pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> Sign {
 /// let dot_sign = dot_3d(&a, &b, &c); // should be orthogonal
 /// assert_eq!(dot_sign, true);
 /// ```
+#[must_use]
 pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
     let ab_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*b);
     let ab_distance = ab_diff.x.hypot(ab_diff.y).hypot(ab_diff.z);
@@ -198,6 +201,7 @@ pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
 /// # let is_in_circle_p_out = in_circle_2d_sos::<false>(&a, &b, &c, &p_out);
 /// # assert_eq!(Sign::Negative, is_in_circle_p_out);
 /// ```
+#[must_use]
 pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point2d, p: &Point2d) -> Sign {
     let incircle = robust::incircle(
         unsafe { core::mem::transmute::<Point2d, Coord<f64>>(*a) },
@@ -246,6 +250,7 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 /// assert_eq!(1, in_sphere_3d_sos::<true>(&a, &b, &c, &d, &p_out));
 /// # assert_eq!(1, in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p_out));
 /// ```
+#[must_use]
 pub fn in_sphere_3d_sos<const PERTURB: bool>(
     a: &Point3d,
     b: &Point3d,
@@ -309,6 +314,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 // /// let det = gp::det_3d(&a, &b, &c);
 // /// assert_eq!(det, 0);
 // /// ```
+// #[must_use]
 // pub fn det_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> i8 {
 //     let res = det_3d_filter(a, b, c);
 //     // FIXME: this breaks tests but it's what geogram does
@@ -467,6 +473,7 @@ mod geogram_ffi {
 ///
 /// assert!(points_are_colinear_3d(&p1, &p2, &p3));
 /// ```
+#[must_use]
 pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bool {
     // Colinearity is tested by using four coplanarity
     // tests with four points that are not coplanar.
@@ -551,6 +558,7 @@ pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
 ///
 /// assert_eq!(1, gp::orient_3d_inexact(&a, &b, &c, &d));
 ///```
+#[must_use]
 pub const fn orient_3d_inexact(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
     let a11 = b[0] - a[0];
     let a12 = b[1] - a[1];
