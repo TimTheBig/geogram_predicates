@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,7 @@ jobs:
       - name: Test
         run: cargo test
 
-  build-legacy:
+  test-legacy:
     runs-on: ubuntu-latest
 
     steps:
