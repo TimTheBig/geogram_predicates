@@ -1,6 +1,7 @@
 [workspace]
 members = ["test_utils"]
-# 2 so msrv does not hold up dependece versions like in not 3
+exclude = ["fuzz"]
+# 2 so msrv does not hold up dependence versions like in not 3
 resolver = "2"
 
 [package]

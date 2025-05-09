@@ -90,14 +90,8 @@ fn side3_2dlifted_2d_filter(
     let r = ((delta1 * a13) - (delta2 * a23)) + (delta3 * a33);
 
     let mut eps;
-    let mut max1 = a11.abs();
-    if max1 < a12.abs() {
-        max1 = a12.abs();
-    }
-    let mut max2 = a21.abs();
-    if max2 < a22.abs() {
-        max2 = a22.abs();
-    }
+    let max1 = (a11.abs()).max(a12.abs());
+    let max2 = (a21.abs()).max(a22.abs());
 
     let int_tmp_result;
     let mut lower_bound_1 = max1;
@@ -125,24 +119,10 @@ fn side3_2dlifted_2d_filter(
 
     let delta3_sign = int_tmp_result;
     let int_tmp_result_ffwkcaa;
-    let mut max3 = max1;
-    if max3 < max2 {
-        max3 = max2;
-    }
-    let mut max4 = a13.abs();
-    if max4 < a23.abs() {
-        max4 = a23.abs();
-    }
-    if max4 < a33.abs() {
-        max4 = a33.abs();
-    }
-    let mut max5 = max2;
-    if max5 < a31.abs() {
-        max5 = a31.abs();
-    }
-    if max5 < a32.abs() {
-        max5 = a32.abs();
-    }
+    let max3 = max1.max(max2);
+    let max4 = (a13.abs()).max(a23.abs()).max(a33.abs());
+    let max5 = max2.max(a31.abs()).max(a32.abs());
+
     lower_bound_1 = max3;
     upper_bound_1 = max3;
     if max5 < lower_bound_1 {

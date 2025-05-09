@@ -110,33 +110,10 @@ fn side4h_3d_filter(
     let r = (((delta1 * a14) - (delta2 * a24)) + (delta3 * a34)) - (delta4 * a44);
 
     let mut eps;
-    let mut max1 = a11.abs();
-    if max1 < a21.abs() {
-        max1 = a21.abs();
-    }
-    if max1 < a31.abs() {
-        max1 = a31.abs();
-    }
-    let mut max2 = a12.abs();
-    if max2 < a13.abs() {
-        max2 = a13.abs();
-    }
-    if max2 < a22.abs() {
-        max2 = a22.abs();
-    }
-    if max2 < a23.abs() {
-        max2 = a23.abs();
-    }
-    let mut max3 = a22.abs();
-    if max3 < a23.abs() {
-        max3 = a23.abs();
-    }
-    if max3 < a32.abs() {
-        max3 = a32.abs();
-    }
-    if max3 < a33.abs() {
-        max3 = a33.abs();
-    }
+
+    let max1 = (a11.abs()).max(a21.abs()).max(a31.abs());
+    let max2 = (a12.abs()).max(a13.abs()).max(a22.abs()).max(a23.abs());
+    let max3 = (a22.abs()).max(a23.abs()).max(a32.abs()).max(a33.abs());
 
     let int_tmp_result;
     let mut lower_bound_1 = max1;
@@ -169,31 +146,12 @@ fn side4h_3d_filter(
 
     let delta4_sign = int_tmp_result;
     let int_tmp_result_ffwkcaa: Sign;
-    let mut max4 = max1;
-    if max4 < a41.abs() {
-        max4 = a41.abs();
-    }
-    let mut max5 = max2;
-    if max5 < max3 {
-        max5 = max3;
-    }
-    let mut max6 = a14.abs();
-    if max6 < a24.abs() {
-        max6 = a24.abs();
-    }
-    if max6 < a34.abs() {
-        max6 = a34.abs();
-    }
-    if max6 < a44.abs() {
-        max6 = a44.abs();
-    }
-    let mut max7 = max3;
-    if max7 < a42.abs() {
-        max7 = a42.abs();
-    }
-    if max7 < a43.abs() {
-        max7 = a43.abs();
-    }
+
+    let max4 = max1.max(a41.abs());
+    let max5 = max2.max(max3);
+    let max6 = (a14.abs()).max(a24.abs()).max(a34.abs()).max(a44.abs());
+    let max7 = max3.max(a42.abs()).max(a43.abs());
+
     lower_bound_1 = max4;
     upper_bound_1 = max4;
     if max5 < lower_bound_1 {
