@@ -1,0 +1,55 @@
+[package]
+name = "geogram_predicates-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+geogram_predicates = { path = "../", package = "geogram_predicates" }
+geogram_predicates_legacy = { git = "https://github.com/glennDittmann/geogram_predicates.git", rev = "30c375e", package = "geogram_predicates" }
+
+[[bin]]
+name = "fuzz_orient_3d"
+path = "fuzz_targets/fuzz_orient_3d.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orient_2d"
+path = "fuzz_targets/fuzz_orient_2d.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_in_circle_2d_sos"
+path = "fuzz_targets/fuzz_in_circle_2d_sos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_in_sphere_3d_sos"
+path = "fuzz_targets/fuzz_in_sphere_3d_sos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orient_2dlifted_sos"
+path = "fuzz_targets/fuzz_orient_2dlifted_sos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orient_3dlifted_sos"
+path = "fuzz_targets/fuzz_orient_3dlifted_sos.rs"
+test = false
+doc = false
+bench = false
