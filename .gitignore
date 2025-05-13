@@ -7,4 +7,4 @@ rust-analyzer
 # tip: on mac put '.DS_Store' in your global gitignore
 .DS_Store
 
-out_*_orient_2d.png
+*.png

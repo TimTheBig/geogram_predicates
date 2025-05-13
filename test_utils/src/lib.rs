@@ -49,3 +49,28 @@ where
     }
     data
 }
+
+pub fn predicate_3d_test<F>(
+    predicate: F,
+    start: [f64; 2],
+    width: usize,
+    height: usize,
+) -> Vec<Ordering>
+where
+    F: Fn([f64; 3]) -> f64,
+{
+    let mut yd = start[1];
+    let mut data = Vec::with_capacity(width * height);
+
+    for _ in 0..height {
+        let mut xd = start[0];
+        for _ in 0..width {
+            // let p = [xd, yd, 12.0];
+            let p = [xd * 1e305, yd * 1e305, (height + width) as f64 * 0.5 * 1e305];
+            data.push(predicate(p).partial_cmp(&0.).unwrap());
+            xd = nextafter(xd, std::f64::INFINITY);
+        }
+        yd = nextafter(yd, std::f64::INFINITY);
+    }
+    data
+}
