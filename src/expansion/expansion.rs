@@ -1,16 +1,22 @@
 use crate::{Sign, geo_sign};
 use core::{cmp::Ordering, fmt};
-use heapless::Vec as ArrayVec;
+use smallvec::SmallVec;
 
 #[derive(Clone, Debug)]
 pub struct Expansion<const N: usize = 6> {
-    /// Capacity is fixed and inline with no heap allocation
-    data: ArrayVec<f64, N>,
+    /// Starts inline then moves to heap allocation once the inline capacity is exceeded
+    data: SmallVec<f64, N>,
 }
 
 impl<const N: usize> fmt::Display for Expansion<N> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Expansion(len: {}) = [", self.len())?;
+        write!(f, "Expansion(len: {}) = ", self.len())?;
+        if self.data.spilled() {
+            write!(f, "Vec [")?;
+        } else {
+            write!(f, "[")?;
+        }
+
         if self.len() > 1 {
             for x in self.data.iter().take(self.len() - 1) {
                 write!(f, "{x}, ")?;
@@ -47,17 +53,13 @@ impl<const N: usize> core::ops::Index<usize> for Expansion<N> {
 
 impl<const N: usize> Default for Expansion<N> {
     fn default() -> Self {
-        Self {
-            data: ArrayVec::new(),
-        }
+        Self::with_capacity(N)
     }
 }
 
 impl<const N: usize> Expansion<N> {
     pub(crate) const fn new() -> Self {
-        Self {
-            data: ArrayVec::new(),
-        }
+        Self::with_capacity(N)
     }
 
     /// Create a new `Expansion` with the given capacity.
@@ -80,11 +82,12 @@ impl<const N: usize> Expansion<N> {
     /// assert_eq!(e.capacity(), 10);
     /// assert_eq!(e.length(), 0);
     /// ```
-    pub fn with_capacity(capacity: usize) -> Self {
-        debug_assert_eq!(N, capacity);
+    pub const fn with_capacity(capacity: usize) -> Self {
+        debug_assert!(N == capacity);
 
+        // it would be nice if this used capacity
         Self {
-            data: ArrayVec::<f64, N>::new(),
+            data: SmallVec::<f64, N>::new(),
         }
     }
 
@@ -110,7 +113,7 @@ impl<const N: usize> Expansion<N> {
     }
 
     #[inline]
-    pub(crate) const fn data_mut(&mut self) -> &mut ArrayVec<f64, N> {
+    pub(crate) const fn data_mut(&mut self) -> &mut SmallVec<f64, N> {
         &mut self.data
     }
 
@@ -138,12 +141,12 @@ impl<const N: usize> Expansion<N> {
     /// ```
     pub fn assign(&mut self, a: f64) -> &mut Self {
         self.data.clear();
-        self.data.push(a).expect("assert");
+        self.data.push(a);
         self
     }
 
     pub(crate) fn assign_abs(&mut self, rhs: &mut Expansion) -> &mut Self {
-        self.data.extend_from_slice(rhs.data_mut()).expect("assert");
+        self.data.extend_from_slice(rhs.data_mut());
         for i in 0..rhs.len() {
             self.data[i] = rhs.data[i];
         }
@@ -229,11 +232,7 @@ impl From<f64> for Expansion<1> {
     fn from(a: f64) -> Self {
         let mut e = Expansion::with_capacity(1);
 
-        #[cfg(debug_assertions)]
-        e.data.push(a).expect("the len is 1 so this will fit");
-        #[cfg(not(debug_assertions))]
-        // SAFETY: the len is 1 so this will fit
-        unsafe { e.data.push_unchecked(a); }
+        e.data.push(a);
         e
     }
 }
@@ -246,22 +245,20 @@ impl<const N: usize> From<[f64; N]> for Expansion<N> {
     fn from(arr: [f64; N]) -> Self {
         Expansion {
             // SAFE: arr len is == N
-            data: unsafe { ArrayVec::from_slice(&arr).unwrap_unchecked() },
+            data: unsafe { SmallVec::from_buf_and_len_unchecked(core::mem::MaybeUninit::new(arr), N) },
         }
     }
 }
 
-impl<const N: usize> TryFrom<&[f64]> for Expansion<N> {
-    type Error = ();
-
+impl<const N: usize> From<&[f64]> for Expansion<N> {
     /// Create an expansion from a slice of doubles.
     ///
     /// The resulting expansion has length `slice.len()` and
     /// components equal to the slice elements in order.
-    fn try_from(slice: &[f64]) -> Result<Self, ()> {
-        Ok(Expansion {
-            data: ArrayVec::from_slice(slice)?,
-        })
+    fn from(slice: &[f64]) -> Self {
+        Expansion {
+            data: SmallVec::from_slice(slice),
+        }
     }
 }
 
@@ -278,8 +275,8 @@ impl<const N: usize> Expansion<N> {
         a: &Expansion<AN>,
         b: &Expansion<BN>,
     ) -> &mut Self {
-        self.data.extend_from_slice(a.data()).expect("assert");
-        self.data.extend_from_slice(b.data()).expect("assert");
+        self.data.extend_from_slice(a.data());
+        self.data.extend_from_slice(b.data());
 
         self.optimize();
         self
@@ -309,12 +306,10 @@ impl<const N: usize> Expansion<N> {
     ) -> &mut Self {
         const { assert!(N > 1, "N must be greater then 1") };
 
-        let cap = Self::product_capacity(a, b);
-        assert!(cap <= self.capacity(), "assign_product: capacity too small");
+        let needed_cap = Self::product_capacity(a, b);
 
         debug_assert_ne!(self.data.capacity(), 0);
-        self.data.resize(N, 0.0).expect("assert");
-        debug_assert_eq!(self.len(), N);
+        self.data.resize(needed_cap, 0.0);
 
         let mut idx = 0;
         // for each pair (i,j), compute two_product and write low,high
@@ -487,8 +482,8 @@ impl<const N: usize> core::ops::Add for Expansion<N> {
     type Output = Expansion<N>;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
-        prod.assign_product(&self, &rhs);
+        let mut prod: Expansion<N> = Expansion::with_capacity(N + N);
+        prod.assign_sum(&self, &rhs);
         prod
     }
 }
@@ -501,6 +496,7 @@ impl<const N: usize> core::ops::Mul for Expansion<N> {
     fn mul(self, rhs: Expansion<N>) -> Self::Output {
         // todo when generic_const_exprs is stabe Expansion<{SN.max(RN)}>
         let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
+
         prod.assign_product(&self, &rhs);
         prod
     }

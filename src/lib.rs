@@ -77,8 +77,7 @@ pub const fn geo_sign(value: f64) -> Sign {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::orient_3d;
-///
+/// # use geogram_predicates::orient_3d;
 /// // Define four points that form a tetrahedron
 /// let a = [0.0, 0.0, 0.0];
 /// let b = [2.0, 0.0, 0.0];

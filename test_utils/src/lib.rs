@@ -41,7 +41,8 @@ where
     for _ in 0..height {
         let mut xd = start[0];
         for _ in 0..width {
-            let p = [xd, yd];
+            // let p = [xd, yd];
+            let p = [xd * 1e305, yd * 1e305];
             data.push(predicate(p).partial_cmp(&0.).unwrap());
             xd = nextafter(xd, std::f64::INFINITY);
         }

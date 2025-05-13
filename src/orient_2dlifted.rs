@@ -180,22 +180,23 @@ fn side3h_2d_exact_sos(
     let a32: Expansion<2> = expansion_diff!(p3[1], p0[1], 1, 1);
     let a33: Expansion<2> = expansion_diff!(h0, h3, 1, 1);
 
-    let delta1: Expansion<3> = expansion_det2x2!([a21, a22], [a31, a32]);
-    let delta2: Expansion<3> = expansion_det2x2!([a11, a12], [a31, a32]);
-    let delta3: Expansion<3> = expansion_det2x2!([a11, a12], [a21, a22]);
+    let delta1: Expansion<4> = expansion_det2x2!([a21, a22], [a31, a32]);
+    let delta2: Expansion<4> = expansion_det2x2!([a11, a12], [a31, a32]);
+    let delta3: Expansion<4> = expansion_det2x2!([a11, a12], [a21, a22]);
 
     let delta3_sign = delta3.sign();
+    // This fails on NaN input
     debug_assert!(delta3_sign != 0);
 
     let r_1: Expansion<4> = expansion_product!(delta1, a13, 4);
     let mut r_2: Expansion<4> = expansion_product!(delta2, a23, 4);
     r_2.negate();
     let r_3: Expansion<4> = expansion_product!(delta3, a33, 4);
-    let r: Expansion<6> = {
+    let r: Expansion<7> = {
         // capacity is `r_1.length() + r_2.length()` which is 4
-        let mut ab: Expansion<4> = Expansion::new();
+        let mut ab: Expansion<5> = Expansion::new();
         ab.assign_sum(&r_1, &r_2);
-        let mut expansion: Expansion<6> = Expansion::new();
+        let mut expansion: Expansion<7> = Expansion::new();
         expansion.assign_sum(&ab, &r_3);
         expansion
     };
@@ -210,7 +211,7 @@ fn side3h_2d_exact_sos(
         for i in 0..3 {
             if p_sort[i] == p0 {
                 let z1 = {
-                    let mut expansion: Expansion<2> = Expansion::with_capacity(2);
+                    let mut expansion: Expansion<3> = Expansion::new();
                     expansion.assign_diff(&delta2, &delta1);
                     expansion
                 };

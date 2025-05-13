@@ -243,6 +243,7 @@ fn side4h_3d_exact_sos<const SOS: bool>(
     // Simulation of Simplicity (symbolic perturbation)
     if SOS && r_sign == 0 {
         let mut p_sort = [p0, p1, p2, p3, p4];
+        p_sort.sort_unstable_by(lexico_compare_3d);
 
         for i in 0..4 {
             if p_sort[i] == p0 {

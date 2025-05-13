@@ -61,7 +61,7 @@ impl core::ops::Mul for Sign {
     // as a integer multiply is faster then a 9 branch match.
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
-        // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so the product must be (1, 0, -1)
+        // SAFETY: Sign is repr(i8) and in the range of (-1, 0, 1) so the product must be (1, 0, -1)
         unsafe { core::mem::transmute::<i8, Sign>(
             (self as i8) * (rhs as i8)
         ) }
@@ -73,7 +73,7 @@ impl core::ops::Neg for Sign {
 
     #[inline]
     fn neg(self) -> Self::Output {
-        // SAFETY: Sign is repr(i8) and will be (-1, 0, 1) so this is safe
+        // SAFETY: Sign is repr(i8) and in the range of (-1, 0, 1) so this is safe
         unsafe { core::mem::transmute::<i8, Sign>(
             -(self as i8)
         ) }

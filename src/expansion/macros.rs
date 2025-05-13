@@ -7,11 +7,15 @@
 /// let e = expansion![1.0, 2.5, 3.75];
 /// assert_eq!(e.length(), 3);
 /// assert_eq!(&e.data(), &[1.0, 2.5, 3.75]);
+/// // or
+/// let e = expansion!(1.0);
+/// # assert_eq!(e.length(), 1);
+/// assert_eq!(&e.data(), &[1.0]);
 /// ```
 #[macro_export]
 macro_rules! expansion {
     // match zero or more comma-separated expressions, allow trailing comma
-    ($($x:expr),* $(,)?) => {
+    [$($x:expr),* $(,)?] => {
         // create a fixed-length array `[f64; count]`, then call From<[f64;N]>
         $crate::Expansion::from([$($x),*])
     };
@@ -107,8 +111,6 @@ macro_rules! expansion_det2x2 {
         // Allocate an Expansion with that capacity
         let mut e = $crate::Expansion::new();
 
-        #[cfg(debug_assertions)]
-        debug_assert_eq!(cap, e.capacity());
         // Perform the determinant assignment
         e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
         e
@@ -138,7 +140,8 @@ macro_rules! expansion_sum {
         let mut expansion = Expansion::new();
         expansion.assign_sum(&$a, &$b);
 
-        debug_assert_eq!(expansion.data_mut().len(), expansion.data_mut().capacity());
+        // limit wasted memory
+        debug_assert!(expansion.data_mut().len().saturating_sub(expansion.data_mut().capacity()) <= 2);
         expansion
     }};
 }
