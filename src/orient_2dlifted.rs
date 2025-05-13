@@ -205,7 +205,7 @@ fn side3h_2d_exact_sos(
     // Simulation of Simplicity (symbolic perturbation)
     if sos && r_sign == 0 {
         let mut p_sort = [p0, p1, p2, p3];
-        p_sort.sort_by(lexico_compare_2d);
+        p_sort.sort_unstable_by(lexico_compare_2d);
 
         for i in 0..3 {
             if p_sort[i] == p0 {

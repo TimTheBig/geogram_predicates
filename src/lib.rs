@@ -1,10 +1,10 @@
 //! # Geogram Predicates
 //!
-//! A Rust port of `geogram`s _robust predicates_.
+//! A Rust port of `geogram`s _robust predicates_.\
 //! An interoperability ffi with `geogram`s _robust predicates_; via `cxx` also available in the `legacy` feature.
 //!
 //! All functions are in written in Rust, except for `det_3d` and `det_4d` which are only available in `legacy`.
-#![no_std]
+#![cfg_attr(feature = "no_std", no_std)]
 
 #![warn(clippy::all, unused, clippy::missing_const_for_fn)]
 
@@ -157,9 +157,16 @@ pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> Sign {
 #[must_use]
 pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
     let ab_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*b);
+    #[cfg(not(feature = "no_std"))]
     let ab_distance = ab_diff.x.hypot(ab_diff.y).hypot(ab_diff.z);
+    #[cfg(feature = "no_std")]
+    let ab_distance = libm::hypot(libm::hypot(ab_diff.x, ab_diff.y), ab_diff.z);
+
     let ac_diff = Into::<Point3<_>>::into(*a) - Into::<Point3<_>>::into(*c);
+    #[cfg(not(feature = "no_std"))]
     let ac_distance = ac_diff.x.hypot(ac_diff.y).hypot(ac_diff.z);
+    #[cfg(feature = "no_std")]
+    let ac_distance = libm::hypot(libm::hypot(ac_diff.x, ac_diff.y), ac_diff.z);
 
     nalgebra::vector![ab_distance].dot(&nalgebra::vector![ac_distance]) >= 0.0
 }
