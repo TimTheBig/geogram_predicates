@@ -58,7 +58,7 @@ impl<const N: usize> Default for Expansion<N> {
 }
 
 impl<const N: usize> Expansion<N> {
-    pub(crate) const fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::with_capacity(N)
     }
 
@@ -82,12 +82,12 @@ impl<const N: usize> Expansion<N> {
     /// assert_eq!(e.capacity(), 10);
     /// assert_eq!(e.length(), 0);
     /// ```
-    pub const fn with_capacity(capacity: usize) -> Self {
-        debug_assert!(N == capacity);
+    pub fn with_capacity(capacity: usize) -> Self {
+        debug_assert!(N >= capacity);
 
         // it would be nice if this used capacity
         Self {
-            data: SmallVec::<f64, N>::new(),
+            data: SmallVec::<f64, N>::with_capacity(capacity),
         }
     }
 
@@ -279,6 +279,7 @@ impl<const N: usize> Expansion<N> {
         self.data.extend_from_slice(b.data());
 
         self.optimize();
+        self.data.shrink_to_fit();
         self
     }
 
@@ -323,6 +324,7 @@ impl<const N: usize> Expansion<N> {
         }
 
         self.optimize();
+        self.data.shrink_to_fit();
         self
     }
 

@@ -105,11 +105,10 @@ macro_rules! expansion_det2x2 {
         [$a21:expr, $a22:expr]$(,)?
     ) => {{
         // Compute exactly the capacity needed
-        #[cfg(debug_assertions)]
         let cap = $crate::Expansion::det2x2_capacity(&$a11, &$a12, &$a21, &$a22);
 
         // Allocate an Expansion with that capacity
-        let mut e = $crate::Expansion::new();
+        let mut e = $crate::Expansion::with_capacity(cap);
 
         // Perform the determinant assignment
         e.assign_det2x2(&$a11, &$a12, &$a21, &$a22);
