@@ -64,28 +64,27 @@ impl<const N: usize> Expansion<N> {
 
     /// Create a new `Expansion` with the given capacity.
     ///
-    /// Internally uses a [`heapless::Vec<f64, N>`](`heapless::Vec`).
+    /// Internally uses a [`smallvec::Vec<f64, N>`](`smallvec::SmallVec`).
     ///
     /// ## Parameters
-    /// - `capacity`: maximum number of components, if this is less then the inline capacity it will still be 9.
+    /// - `capacity`: maximum number of components, if this is less then the inline capacity it will still be `N`.
     ///
     /// ## Examples
     /// ```
     /// # use geogram_predicates::Expansion;
     /// let e: Expansion = Expansion::with_capacity(6);
     /// assert_eq!(e.capacity(), 6); // 6 is the default Expansion capacity
-    /// assert_eq!(e.length(), 0);
+    /// assert_eq!(e.len(), 0);
     /// ```
     /// ```should_panic
     /// # use geogram_predicates::Expansion;
     /// let e = Expansion::<9>::with_capacity(10);
     /// assert_eq!(e.capacity(), 10);
-    /// assert_eq!(e.length(), 0);
+    /// assert_eq!(e.len(), 0);
     /// ```
     pub fn with_capacity(capacity: usize) -> Self {
         debug_assert!(N >= capacity);
 
-        // it would be nice if this used capacity
         Self {
             data: SmallVec::<f64, N>::with_capacity(capacity),
         }
@@ -129,14 +128,14 @@ impl<const N: usize> Expansion<N> {
 
     /// Assign a single double to this expansion.
     ///
-    /// After this call, `self.length() == 1` and `self[0] == a`.
+    /// After this call, `self.len() == 1` and `self[0] == a`.
     ///
     /// ## Examples
     /// ```
     /// # use geogram_predicates::Expansion;
     /// let mut e = Expansion::<2>::with_capacity(2);
     /// e.assign(3.14);
-    /// assert_eq!(e.length(), 1);
+    /// assert_eq!(e.len(), 1);
     /// assert_eq!(e[0], 3.14);
     /// ```
     pub fn assign(&mut self, a: f64) -> &mut Self {
@@ -336,8 +335,9 @@ impl<const N: usize> Expansion<N> {
     }
 
     /// Remove trailing zero components to maintain a canonical form.
+    /// As well as compress into the least terms.
     ///
-    /// After this call, `length()` is the smallest index such that
+    /// After this call, `len()` is the smallest index such that
     /// the last component is non-zero, or zero if all components are zero.
     pub(crate) fn optimize(&mut self) -> &mut Self {
         while let Some(&last) = self.data.last() {
@@ -348,7 +348,54 @@ impl<const N: usize> Expansion<N> {
             }
         }
 
+        self.compress_expansion();
+
         self
+    }
+
+    /// Compression works by traversing the expansion from largest to smallest component, then back
+    /// from smallest to largest, replacing each adjacent pair with its two-component sum.
+    /// [Shewchuk 97](https://people.eecs.berkeley.edu/~jrs/papers/robustr.pdf)
+    fn compress_expansion(&mut self) {
+        let e = self;
+
+        let m = e.len();
+        // empty or one item is a no-op
+        if m <= 1 {
+            return;
+        } /* else if m == 2 {
+            return ; // sum of two
+        } */
+
+        let mut q;
+
+        let mut bottom = m.saturating_sub(1);   
+        #[allow(non_snake_case)]     
+        let mut Q = e[bottom];
+
+        for i in (0..=(m as i32).saturating_sub(2)).rev() {
+            (Q, q) = fast_two_sum(Q, e[i as usize]);
+
+            if q != 0.0 {
+                e.data[bottom] = Q;
+                bottom -= 1;
+                Q = q;
+            }
+        }
+        e.data[bottom] = Q;
+
+        let mut top = 0;
+        for i in (bottom + 1)..m {
+            (Q, q) = fast_two_sum(e[i], Q);
+
+            if q != 0.0 {
+                e.data[top] = q;
+                top += 1;
+            }
+        }
+        e.data[top] = Q;
+
+        e.data.truncate(top + 1);
     }
 
     /// Compute the capacity needed to form the 3×3 determinant
@@ -504,4 +551,16 @@ impl<const N: usize> core::ops::Mul for Expansion<N> {
         prod.assign_product(&self, &rhs);
         prod
     }
+}
+
+#[inline(always)]
+fn fast_two_sum_tail(a: f64, b: f64, x: f64) -> f64 {
+    let bvirt = x - a;
+    b - bvirt
+}
+
+#[inline]
+fn fast_two_sum(a: f64, b: f64) -> (f64, f64) {
+    let x = a + b;
+    (x, fast_two_sum_tail(a, b, x))
 }

@@ -5,11 +5,11 @@
 /// ```
 /// # use geogram_predicates::expansion;
 /// let e = expansion![1.0, 2.5, 3.75];
-/// assert_eq!(e.length(), 3);
+/// assert_eq!(e.len(), 3);
 /// assert_eq!(&e.data(), &[1.0, 2.5, 3.75]);
 /// // or
 /// let e = expansion!(1.0);
-/// # assert_eq!(e.length(), 1);
+/// # assert_eq!(e.len(), 1);
 /// assert_eq!(&e.data(), &[1.0]);
 /// ```
 #[macro_export]
