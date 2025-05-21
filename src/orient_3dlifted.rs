@@ -34,17 +34,17 @@ use core::cmp::Ordering;
 /// // Additionally in this scenario, each point is associated with a weight w_i
 /// // And the height of a point is defined as h_i = x_i**2 + y_i**2 + z_i**2 - w_i
 /// // One can interpret the height as the 4th-coordinate of a point lifted to R^4
-/// let h_a = a[0].powf(2.0) + a[1].powf(2.0) + a[2].powf(2.0) + 2.0;  // i.e. w_a = -2.0
-/// let h_b = b[0].powf(2.0) + b[1].powf(2.0) + b[2].powf(2.0) - 1.0;  // i.e. w_b = 1.0
-/// let h_c = c[0].powf(2.0) + c[1].powf(2.0) + c[2].powf(2.0) - 0.5;  // i.e. w_c = 0.5
-/// let h_d = d[0].powf(2.0) + d[1].powf(2.0) + d[2].powf(2.0) - 0.5;  // i.e. w_c = 0.5
+/// let h_a = a[0].powi(2) + a[1].powi(2) + a[2].powi(2) + 2.0;  // i.e. w_a = -2.0
+/// let h_b = b[0].powi(2) + b[1].powi(2) + b[2].powi(2) - 1.0;  // i.e. w_b = 1.0
+/// let h_c = c[0].powi(2) + c[1].powi(2) + c[2].powi(2) - 0.5;  // i.e. w_c = 0.5
+/// let h_d = d[0].powi(2) + d[1].powi(2) + d[2].powi(2) - 0.5;  // i.e. w_c = 0.5
 ///
 /// // Define weighted points, to test against the hyperplane, that contains the lifted tetrahedron
 /// let p_below: [f64; 3] = [0.6, 0.6, 0.6];
-/// let h_p_below = p_below[0].powf(2.0) + p_below[1].powf(2.0) + 0.28;  // i.e. w_p_below = -0.28
+/// let h_p_below = p_below[0].powi(2) + p_below[1].powi(2) + 0.28;  // i.e. w_p_below = -0.28
 ///
 /// let p_above: [f64; 3] = [0.6, 0.6, 0.6];
-/// let h_p_above = p_above[0].powf(2.0) + p_above[1].powf(2.0) + 2.78;  // i.e. w_p_above = -2.78
+/// let h_p_above = p_above[0].powi(2) + p_above[1].powi(2) + 2.78;  // i.e. w_p_above = -2.78
 ///
 /// let orientation_below = orient_3dlifted_sos(&a, &b, &c, &d, &p_below, [h_a, h_b, h_c, h_d, h_p_below]);
 /// assert_eq!(1, orientation_below);
@@ -53,6 +53,9 @@ use core::cmp::Ordering;
 /// assert_eq!(-1, orientation_above);
 ///
 /// ```
+/// ## Panics
+/// This will panic if any input contains a NaN value
+#[must_use]
 pub fn orient_3dlifted_sos(
     a: &[f64; 3],
     b: &[f64; 3],
@@ -128,20 +131,16 @@ fn side4h_3d_filter(
     } else if max3 > upper_bound_1 {
         upper_bound_1 = max3;
     }
-    if lower_bound_1 < 1.63288018496748314939e-98 {
+    if lower_bound_1 < 1.63288018496748314939e-98 || upper_bound_1 > 7.23700557733225980357e+75 {
         return FPG_UNCERTAIN_VALUE;
+    }
+    eps = 5.11071278299732992696e-15 * ((max2 * max3) * max1);
+    if delta4 > eps {
+        int_tmp_result = Sign::Positive;
+    } else if delta4 < -eps {
+        int_tmp_result = Sign::Negative;
     } else {
-        if upper_bound_1 > 7.23700557733225980357e+75 {
-            return FPG_UNCERTAIN_VALUE;
-        }
-        eps = 5.11071278299732992696e-15 * ((max2 * max3) * max1);
-        if delta4 > eps {
-            int_tmp_result = Sign::Positive;
-        } else if delta4 < -eps {
-            int_tmp_result = Sign::Negative;
-        } else {
-            return FPG_UNCERTAIN_VALUE;
-        }
+        return FPG_UNCERTAIN_VALUE;
     }
 
     let delta4_sign = int_tmp_result;
@@ -228,7 +227,7 @@ fn side4h_3d_exact_sos<const SOS: bool>(
     let delta4: Expansion<6> = expansion_det3x3!(a11, a12, a13, a21, a22, a23, a31, a32, a33);
 
     let delta4_sign = delta4.sign();
-    debug_assert!(delta4_sign != 0);
+    assert!(delta4_sign != 0);
 
     let r_1: Expansion<2> = expansion_product!(delta1, a14);
     let mut r_2: Expansion<2> = expansion_product!(delta2, a24);
@@ -245,8 +244,8 @@ fn side4h_3d_exact_sos<const SOS: bool>(
         let mut p_sort = [p0, p1, p2, p3, p4];
         p_sort.sort_unstable_by(lexico_compare_3d);
 
-        for i in 0..4 {
-            if p_sort[i] == p0 {
+        for &sorting in p_sort.iter().take(4) {
+            if sorting == p0 {
                 let z1: Expansion<2> = expansion_diff!(Expansions: delta2, delta1);
                 let z2: Expansion<2> = expansion_diff!(Expansions: delta4, delta3);
                 let z: Expansion<1> = expansion_sum!(z1, z2);
@@ -254,22 +253,22 @@ fn side4h_3d_exact_sos<const SOS: bool>(
                 if z_sign != 0 {
                     return delta4_sign * z_sign;
                 }
-            } else if p_sort[i] == p1 {
+            } else if sorting == p1 {
                 let delta1_sign = delta1.sign();
                 if delta1_sign != 0 {
                     return delta4_sign * delta1_sign;
                 }
-            } else if p_sort[i] == p2 {
+            } else if sorting == p2 {
                 let delta2_sign = delta2.sign();
                 if delta2_sign != 0 {
                     return (-delta4_sign) * delta2_sign;
                 }
-            } else if p_sort[i] == p3 {
+            } else if sorting == p3 {
                 let delta3_sign = delta3.sign();
                 if delta3_sign != 0 {
                     return delta4_sign * delta3_sign;
                 }
-            } else if p_sort[i] == p4 {
+            } else if sorting == p4 {
                 return Sign::Negative;
             }
         }

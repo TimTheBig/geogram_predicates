@@ -62,27 +62,6 @@ macro_rules! expansion_det3x3 {
         );
         e
     }};
-    (
-        [$a11:expr, $a12:expr, $a13:expr],
-        [$a21:expr, $a22:expr, $a23:expr],
-        [$a31:expr, $a32:expr, $a33:expr]$(,)?
-    ) => {{
-        // Compute exactly the capacity needed
-        let cap = $crate::Expansion::det3x3_capacity(
-            [&$a11, &$a12, &$a13],
-            [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33],
-        );
-        // Allocate an Expansion with that capacity
-        let mut e = $crate::Expansion::with_capacity(cap);
-        // Perform the determinant assignment
-        e.assign_det3x3(
-            [&$a11, &$a12, &$a13],
-            [&$a21, &$a22, &$a23],
-            [&$a31, &$a32, &$a33],
-        );
-        e
-    }};
 }
 
 /// Compute the 2×2 determinant of four `Expansion`s, returning a new `Expansion`.

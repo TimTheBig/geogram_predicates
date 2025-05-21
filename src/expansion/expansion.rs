@@ -92,13 +92,13 @@ impl<const N: usize> Expansion<N> {
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.data.len()
     }
 
     /// Returns `true` if the vector is empty
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.data.len() == 0
     }
 
@@ -142,6 +142,7 @@ impl<const N: usize> Expansion<N> {
     pub fn assign(&mut self, a: f64) -> &mut Self {
         self.data.clear();
         self.data.push(a);
+
         self
     }
 
@@ -174,7 +175,7 @@ impl<const N: usize> Expansion<N> {
     }
 
     pub(crate) fn scale_fast(&mut self, s: f64) -> &mut Self {
-        for v in self.data.iter_mut() {
+        for v in &mut self.data {
             *v *= s;
         }
         self
@@ -195,10 +196,10 @@ impl<const N: usize> Expansion<N> {
     }
 
     pub fn sign(&self) -> Sign {
-        if self.is_empty() {
+        if let Some(data_last) = self.data.last() {
+            geo_sign(*data_last)
+        } else /* empty */ {
             Sign::Zero
-        } else {
-            geo_sign(*self.data.last().unwrap())
         }
     }
 
@@ -265,7 +266,7 @@ impl<const N: usize> From<&[f64]> for Expansion<N> {
 impl<const N: usize> Expansion<N> {
     /// Compute capacity needed to multiply two expansions a and b.
     pub(crate) fn product_capacity<const AN: usize, const BN: usize>(a: &Expansion<AN>, b: &Expansion<BN>) -> usize {
-        a.length().saturating_mul(b.length()).saturating_mul(2).max(1)
+        a.len().saturating_mul(b.len()).saturating_mul(2).max(1)
     }
 
     /// Assign `self` = a + b (expansion sum).
@@ -275,6 +276,12 @@ impl<const N: usize> Expansion<N> {
         a: &Expansion<AN>,
         b: &Expansion<BN>,
     ) -> &mut Self {
+        // todo maybe it's faster if `a` and `b` are optimized first if `self.capacity` is less then `a.len + b.len`
+        // if self.capacity() < a.len() + b.len() {
+        //     a.optimize();
+        //     b.optimize();
+        // }
+
         self.data.extend_from_slice(a.data());
         self.data.extend_from_slice(b.data());
 
@@ -314,8 +321,8 @@ impl<const N: usize> Expansion<N> {
 
         let mut idx = 0;
         // for each pair (i,j), compute two_product and write low,high
-        for &ai in a.data.iter() {
-            for &bi in b.data.iter() {
+        for &ai in &a.data {
+            for &bi in &b.data {
                 let (low, high) = two_product(ai, bi);
                 self.data[idx] = low;
                 self.data[idx + 1] = high;
@@ -328,18 +335,13 @@ impl<const N: usize> Expansion<N> {
         self
     }
 
-    /// Return the number of components in the expansion.
-    pub fn length(&self) -> usize {
-        self.data.len()
-    }
-
     /// Remove trailing zero components to maintain a canonical form.
     ///
     /// After this call, `length()` is the smallest index such that
     /// the last component is non-zero, or zero if all components are zero.
     pub(crate) fn optimize(&mut self) -> &mut Self {
         while let Some(&last) = self.data.last() {
-            if last < f64::EPSILON {
+            if last == 0.0 {
                 self.data.pop();
             } else {
                 break;
@@ -367,7 +369,7 @@ impl<const N: usize> Expansion<N> {
         let c11 = Self::det2x2_capacity(a22, a23, a32, a33);
         let c12 = Self::det2x2_capacity(a21, a23, a31, a33);
         let c13 = Self::det2x2_capacity(a21, a22, a31, a32);
-        2 * ((a11.length() * c11) + (a12.length() * c12) + (a13.length() * c13))
+        2 * ((a11.len() * c11) + (a12.len() * c12) + (a13.len() * c13))
     }
 
     /// Assign to `self` the 3×3 determinant of the nine expansions.

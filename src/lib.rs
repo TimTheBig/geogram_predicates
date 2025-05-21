@@ -513,6 +513,7 @@ pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bo
 ///
 /// assert!(points_are_identical_2d(&p1, &p2));
 /// ```
+#[must_use]
 pub const fn points_are_identical_2d(p1: &Point2d, p2: &Point2d) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1]
 }
@@ -536,6 +537,7 @@ pub const fn points_are_identical_2d(p1: &Point2d, p2: &Point2d) -> bool {
 ///
 /// assert!(points_are_identical_3d(&p1, &p2));
 /// ```
+#[must_use]
 pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
     p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]
 }

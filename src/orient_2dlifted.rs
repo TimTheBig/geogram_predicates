@@ -19,7 +19,7 @@ use core::cmp::Ordering;
 /// ### Return values
 /// - `+1` - if p3' lies below the plane
 /// - `-1` - if p3' lies above the plane
-/// - `0`	- if `p'` lies exactly on the hyperplane
+/// - `0`  - if `p'` lies exactly on the hyperplane
 ///
 /// # Example
 /// For a graphical representation see this [geogebra example](https://www.geogebra.org/m/etyzj96t) of the code below.
@@ -34,16 +34,16 @@ use core::cmp::Ordering;
 /// // Additionally in this scenario, each point is associated with a weight w_i
 /// // And the height of a point is defined as h_i = x_i**2 + y_i**2 - w_i
 /// // One can interpret the height as the z-coordinate of a point lifted to R^3
-/// let h_a = a[0].powf(2.0) + a[1].powf(2.0) + 2.0;  // i.e. w_a = -2.0
-/// let h_b = b[0].powf(2.0) + b[1].powf(2.0) - 1.0;  // i.e. w_b = 1.0
-/// let h_c = c[0].powf(2.0) + c[1].powf(2.0) - 0.5;  // i.e. w_c = 0.5
+/// let h_a = a[0].powi(2) + a[1].powi(2) + 2.0;  // i.e. w_a = -2.0
+/// let h_b = b[0].powi(2) + b[1].powi(2) - 1.0;  // i.e. w_b = 1.0
+/// let h_c = c[0].powi(2) + c[1].powi(2) - 0.5;  // i.e. w_c = 0.5
 ///
 /// // Define weighted points, to test against the plane, that contains the lifted triangle
 /// let p_below: [f64; 2] = [0.6, 0.6];
-/// let h_p_below = p_below[0].powf(2.0) + p_below[1].powf(2.0) + 1.28;  // i.e. w_p_below = -1.28
+/// let h_p_below = p_below[0].powi(2) + p_below[1].powi(2) + 1.28;  // i.e. w_p_below = -1.28
 ///
 /// let p_above: [f64; 2] = [0.6, 0.6];
-/// let h_p_above = p_above[0].powf(2.0) + p_above[1].powf(2.0) + 2.78;  // i.e. w_p_above = -2.78
+/// let h_p_above = p_above[0].powi(2) + p_above[1].powi(2) + 2.78;  // i.e. w_p_above = -2.78
 ///
 /// let orientation_below = orient_2dlifted_sos(&a, &b, &c, &p_below, [h_a, h_b, h_c, h_p_below]);
 /// assert_eq!(1, orientation_below);
@@ -51,6 +51,9 @@ use core::cmp::Ordering;
 /// let orientation_above = orient_2dlifted_sos(&a, &b, &c, &p_above, [h_a, h_b, h_c, h_p_above]);
 /// assert_eq!(-1, orientation_above);
 /// ```
+/// ## Panics
+/// This will panic if any input contains a NaN value
+#[must_use]
 pub fn orient_2dlifted_sos(
     a: &Point2d,
     b: &Point2d,
@@ -101,20 +104,17 @@ fn side3_2dlifted_2d_filter(
     } else if max2 > upper_bound_1 {
         upper_bound_1 = max2;
     }
-    if lower_bound_1 < 5.00368081960964635413e-147 {
+
+    if lower_bound_1 < 5.00368081960964635413e-147 || upper_bound_1 > 5.59936185544450928309e+101 {
         return FPG_UNCERTAIN_VALUE;
+    }
+    eps = 8.88720573725927976811e-16 * (max1 * max2);
+    if delta3 > eps {
+        int_tmp_result = Sign::Positive;
+    } else if delta3 < -eps {
+        int_tmp_result = Sign::Negative;
     } else {
-        if upper_bound_1 > 5.59936185544450928309e+101 {
-            return FPG_UNCERTAIN_VALUE;
-        }
-        eps = 8.88720573725927976811e-16 * (max1 * max2);
-        if delta3 > eps {
-            int_tmp_result = Sign::Positive;
-        } else if delta3 < -eps {
-            int_tmp_result = Sign::Negative;
-        } else {
-            return FPG_UNCERTAIN_VALUE;
-        }
+        return FPG_UNCERTAIN_VALUE;
     }
 
     let delta3_sign = int_tmp_result;
@@ -137,20 +137,16 @@ fn side3_2dlifted_2d_filter(
     }
 
     // I think that is a bit out of the f64 range
-    if lower_bound_1 < 1.63288018496748314939e-98 {
+    if lower_bound_1 < 1.63288018496748314939e-98 || upper_bound_1 > 5.59936185544450928309e+101 {
         return FPG_UNCERTAIN_VALUE;
+    }
+    eps = 5.11071278299732992696e-15 * ((max3 * max5) * max4);
+    if r > eps {
+        int_tmp_result_ffwkcaa = Sign::Positive;
+    } else if r < -eps {
+        int_tmp_result_ffwkcaa = Sign::Negative;
     } else {
-        if upper_bound_1 > 5.59936185544450928309e+101 {
-            return FPG_UNCERTAIN_VALUE;
-        }
-        eps = 5.11071278299732992696e-15 * ((max3 * max5) * max4);
-        if r > eps {
-            int_tmp_result_ffwkcaa = Sign::Positive;
-        } else if r < -eps {
-            int_tmp_result_ffwkcaa = Sign::Negative;
-        } else {
-            return FPG_UNCERTAIN_VALUE;
-        }
+        return FPG_UNCERTAIN_VALUE;
     }
 
     delta3_sign * int_tmp_result_ffwkcaa
@@ -186,7 +182,7 @@ fn side3h_2d_exact_sos(
 
     let delta3_sign = delta3.sign();
     // This fails on NaN input
-    debug_assert!(delta3_sign != 0);
+    assert!(delta3_sign != 0);
 
     let r_1: Expansion<4> = expansion_product!(delta1, a13, 4);
     let mut r_2: Expansion<4> = expansion_product!(delta2, a23, 4);
@@ -208,10 +204,10 @@ fn side3h_2d_exact_sos(
         let mut p_sort = [p0, p1, p2, p3];
         p_sort.sort_unstable_by(lexico_compare_2d);
 
-        for i in 0..3 {
-            if p_sort[i] == p0 {
+        for &sorting in p_sort.iter().take(3) {
+            if sorting == p0 {
                 let z1 = {
-                    let mut expansion: Expansion<3> = Expansion::new();
+                    let mut expansion: Expansion<8> = Expansion::with_capacity(delta2.len() + delta1.len());
                     expansion.assign_diff(&delta2, &delta1);
                     expansion
                 };
@@ -220,17 +216,17 @@ fn side3h_2d_exact_sos(
                 if z_sign != 0 {
                     return delta3_sign * z_sign;
                 }
-            } else if p_sort[i] == p1 {
+            } else if sorting == p1 {
                 let delta1_sign = delta1.sign();
                 if delta1_sign != 0 {
                     return delta3_sign * delta1_sign;
                 }
-            } else if p_sort[i] == p2 {
+            } else if sorting == p2 {
                 let delta2_sign = delta2.sign();
                 if delta2_sign != 0 {
                     return (-delta3_sign) * delta2_sign;
                 }
-            } else if p_sort[i] == p3 {
+            } else if sorting == p3 {
                 return Sign::Negative;
             }
         }
