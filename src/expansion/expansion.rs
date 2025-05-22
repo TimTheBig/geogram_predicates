@@ -4,7 +4,7 @@ use smallvec::SmallVec;
 
 #[derive(Clone, Debug)]
 pub struct Expansion<const N: usize = 6> {
-    /// Starts inline then moves to heap allocation once the inline capacity is exceeded
+    /// Starts inline then moves to heap allocation once the inline capacity (`N`) is exceeded
     data: SmallVec<f64, N>,
 }
 
@@ -366,29 +366,32 @@ impl<const N: usize> Expansion<N> {
     /// # use geogram_predicates::Expansion;
     /// let mut expansion = Expansion::from([0.1, 0.1]);
     /// expansion.compress_expansion();
-    /// # assert_eq!(expansion, Expansion::<2>::from([0.2].as_slice()));
-    /// ```
-    /// ```ignore
+    ///
     /// assert_eq!(expansion, Expansion::from(0.2));
     /// ```
     pub fn compress_expansion(&mut self) {
         let e = self;
 
-        let m = e.len();
+        let e_len = e.len();
         // empty or one item is a no-op
-        if m <= 1 {
+        if e_len <= 1 {
             return;
-        } /* else if m == 2 {
-            return ; // sum of two
-        } */
+        } else if e_len == 2 {
+            // sum of two
+            let sum = e[0] + e[1];
+
+            e.data.clear();
+            e.data.push(sum);
+            return;
+        }
 
         let mut q;
 
-        let mut bottom = m.saturating_sub(1);   
+        let mut bottom = e_len.saturating_sub(1);   
         #[allow(non_snake_case)]     
         let mut Q = e[bottom];
 
-        for i in (0..=(m as i32).saturating_sub(2)).rev() {
+        for i in (0..=(e_len as i32).saturating_sub(2)).rev() {
             (Q, q) = fast_two_sum(Q, e[i as usize]);
 
             if q != 0.0 {
@@ -400,7 +403,7 @@ impl<const N: usize> Expansion<N> {
         e.data[bottom] = Q;
 
         let mut top = 0;
-        for i in (bottom + 1)..m {
+        for i in (bottom + 1)..e_len {
             (Q, q) = fast_two_sum(e[i], Q);
 
             if q != 0.0 {
@@ -415,14 +418,6 @@ impl<const N: usize> Expansion<N> {
 
     /// Compute the capacity needed to form the 3×3 determinant
     /// of the nine expansions a11…a33.
-    ///
-    /// Mirrors C++:
-    /// ```cpp
-    /// index_t c11 = det2x2_capacity(a22,a23,a32,a33);
-    /// index_t c12 = det2x2_capacity(a21,a23,a31,a33);
-    /// index_t c13 = det2x2_capacity(a21,a22,a31,a32);
-    /// return 2 * (a11.len()*c11 + a12.len()*c12 + a13.len()*c13);
-    /// ```
     pub(crate) fn det3x3_capacity(
         [a11, a12, a13]: [&Expansion<N>; 3],
         [a21, a22, a23]: [&Expansion<N>; 3],
@@ -431,6 +426,7 @@ impl<const N: usize> Expansion<N> {
         let c11 = Self::det2x2_capacity(a22, a23, a32, a33);
         let c12 = Self::det2x2_capacity(a21, a23, a31, a33);
         let c13 = Self::det2x2_capacity(a21, a22, a31, a32);
+
         2 * ((a11.len() * c11) + (a12.len() * c12) + (a13.len() * c13))
     }
 
@@ -543,7 +539,7 @@ const fn split(a: f64) -> (f64, f64) {
 }
 
 impl<const N: usize> core::ops::Add for Expansion<N> {
-    // todo use when generic_const_exprs is stabe
+    // todo use when generic_const_exprs is stable
     // type Output = Expansion<{N + N}>;
     type Output = Expansion<N>;
 
@@ -555,12 +551,12 @@ impl<const N: usize> core::ops::Add for Expansion<N> {
 }
 
 impl<const N: usize> core::ops::Mul for Expansion<N> {
-    // todo use when generic_const_exprs is stabe
+    // todo use when generic_const_exprs is stable
     // type Output = Expansion<{N.saturating_mul(b.length()).saturating_mul(2)}>;
     type Output = Expansion<N>;
 
     fn mul(self, rhs: Expansion<N>) -> Self::Output {
-        // todo when generic_const_exprs is stabe Expansion<{SN.max(RN)}>
+        // todo when generic_const_exprs is stable Expansion<{SN.max(RN)}>
         let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
 
         prod.assign_product(&self, &rhs);
