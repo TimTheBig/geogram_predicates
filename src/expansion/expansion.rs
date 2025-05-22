@@ -29,14 +29,14 @@ impl<const N: usize> fmt::Display for Expansion<N> {
     }
 }
 
-impl<const N: usize> PartialEq for Expansion<N> {
-    fn eq(&self, other: &Self) -> bool {
+impl<const N: usize, const ON: usize> PartialEq<Expansion<ON>> for Expansion<N> {
+    fn eq(&self, other: &Expansion<ON>) -> bool {
         self.equals(other)
     }
 }
 
-impl<const N: usize> PartialOrd for Expansion<N> {
-    fn partial_cmp(&self, other: &Expansion<N>) -> Option<Ordering> {
+impl<const N: usize, const ON: usize> PartialOrd<Expansion<ON>> for Expansion<N> {
+    fn partial_cmp(&self, other: &Expansion<ON>) -> Option<Ordering> {
         // Always returns Some(Ordering) because compare() gives a total order.
         let est_self = self.estimate();
         let est_rhs = other.estimate();
@@ -46,8 +46,15 @@ impl<const N: usize> PartialOrd for Expansion<N> {
 
 impl<const N: usize> core::ops::Index<usize> for Expansion<N> {
     type Output = f64;
+
     fn index(&self, idx: usize) -> &f64 {
         &self.data[idx]
+    }
+}
+
+impl<const N: usize> core::ops::IndexMut<usize> for Expansion<N> {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.data[idx]
     }
 }
 
@@ -202,7 +209,7 @@ impl<const N: usize> Expansion<N> {
         }
     }
 
-    pub(crate) fn equals(&self, rhs: &Expansion<N>) -> bool {
+    pub(crate) fn equals<const ON: usize>(&self, rhs: &Expansion<ON>) -> bool {
         self.compare(rhs) == Sign::Zero
     }
 
@@ -220,7 +227,7 @@ impl<const N: usize> Expansion<N> {
     /// let b = Expansion::from(2.0);
     /// assert!(a < b);
     /// ```
-    pub(crate) fn compare(&self, rhs: &Expansion<N>) -> Sign {
+    pub(crate) fn compare<const ON: usize>(&self, rhs: &Expansion<ON>) -> Sign {
         let est_self = self.estimate();
         let est_rhs = rhs.estimate();
         geo_sign(est_self - est_rhs)
