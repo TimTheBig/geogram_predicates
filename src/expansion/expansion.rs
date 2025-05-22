@@ -335,7 +335,6 @@ impl<const N: usize> Expansion<N> {
     }
 
     /// Remove trailing zero components to maintain a canonical form.
-    /// As well as compress into the least terms.
     ///
     /// After this call, `len()` is the smallest index such that
     /// the last component is non-zero, or zero if all components are zero.
@@ -348,15 +347,24 @@ impl<const N: usize> Expansion<N> {
             }
         }
 
-        self.compress_expansion();
-
         self
     }
 
+    /// ### Compress into the least terms.
     /// Compression works by traversing the expansion from largest to smallest component, then back
     /// from smallest to largest, replacing each adjacent pair with its two-component sum.
     /// [Shewchuk 97](https://people.eecs.berkeley.edu/~jrs/papers/robustr.pdf)
-    fn compress_expansion(&mut self) {
+    /// ## Usage
+    /// ```
+    /// # use geogram_predicates::Expansion;
+    /// let mut expansion = Expansion::from([0.1, 0.1]);
+    /// expansion.compress_expansion();
+    /// # assert_eq!(expansion, Expansion::<2>::from([0.2].as_slice()));
+    /// ```
+    /// ```ignore
+    /// assert_eq!(expansion, Expansion::from(0.2));
+    /// ```
+    pub fn compress_expansion(&mut self) {
         let e = self;
 
         let m = e.len();
