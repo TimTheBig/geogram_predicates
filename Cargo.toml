@@ -13,7 +13,8 @@ rust-version = "1.85.1"
 
 repository = "https://github.com/glennDittmann/geogram_predicates"
 authors = ["Glenn Dittmann", "TimTheBig"]
-license = "LGPL-3.0 OR MIT"
+# when the legacy feature is enabled the c++ code it use is apache
+license = "MIT OR (MIT AND Apache-2.0)"
 
 keywords = ["computer-graphics", "math", "geometry", "predicates", "robust"]
 categories = ["no-std", "mathematics", "graphics"]
