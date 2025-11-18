@@ -264,7 +264,7 @@ impl<const N: usize> From<&[f64]> for Expansion<N> {
     /// components equal to the slice elements in order.
     fn from(slice: &[f64]) -> Self {
         Expansion {
-            data: SmallVec::from_slice(slice),
+            data: SmallVec::from_slice_copy(slice),
         }
     }
 }
@@ -508,7 +508,7 @@ impl<const N: usize> Expansion<N> {
 
 /// Two-product: return (low, high) parts of ai*bi
 #[inline]
-fn two_product(a: f64, b: f64) -> (f64, f64) {
+const fn two_product(a: f64, b: f64) -> (f64, f64) {
     let x = a * b;
 
     (x, two_product_tail(a, b, x))
@@ -538,24 +538,24 @@ const fn split(a: f64) -> (f64, f64) {
     (ahi, alo)
 }
 
-impl<const N: usize> core::ops::Add for Expansion<N> {
+impl<const N: usize, const RHS_N: usize> core::ops::Add<Expansion<RHS_N>> for Expansion<N> {
     // todo use when generic_const_exprs is stable
     // type Output = Expansion<{N + N}>;
     type Output = Expansion<N>;
 
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: Expansion<RHS_N>) -> Self::Output {
         let mut prod: Expansion<N> = Expansion::with_capacity(N + N);
         prod.assign_sum(&self, &rhs);
         prod
     }
 }
 
-impl<const N: usize> core::ops::Mul for Expansion<N> {
+impl<const N: usize, const RHS_N: usize> core::ops::Mul<Expansion<RHS_N>> for Expansion<N> {
     // todo use when generic_const_exprs is stable
     // type Output = Expansion<{N.saturating_mul(b.length()).saturating_mul(2)}>;
     type Output = Expansion<N>;
 
-    fn mul(self, rhs: Expansion<N>) -> Self::Output {
+    fn mul(self, rhs: Expansion<RHS_N>) -> Self::Output {
         // todo when generic_const_exprs is stable Expansion<{SN.max(RN)}>
         let mut prod: Expansion<N> = Expansion::with_capacity(Expansion::<N>::product_capacity(&self, &rhs));
 
