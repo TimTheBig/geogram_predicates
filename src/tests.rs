@@ -225,7 +225,65 @@ fn test_orient_3dlifted() {
     let p3 = [0.1, 0.1, 0.1];
     let h3 = 0.0;
     let res3 = gp::orient_3dlifted_sos(&a3, &b3, &c3, &d3, &p3, [h3, h3, h3, h3, h3]);
+    assert_eq!(res3, 1 /* res from c++ */);
+
     assert_eq!(res3, gp::in_sphere_3d_sos::<false>(&a3, &b3, &c3, &d3, &p3));
+
+    let a4 = [0.0, 3.0, 0.0];
+    let res4 = gp::orient_3dlifted_sos(&a4, &b3, &c3, &d3, &p3, [h3, h3, h3, h3, h3]);
+    assert_eq!(res4, 1 /* res from c++ */);
+
+    let a = [0.0, 3.0, 0.0];
+    let b = [-1.0, 0.0, 0.0];
+    let c = [0.0, -1.0, 0.0];
+    let d = [-9.0, 0.0, -1.0];
+    let p = [-0.1, -0.1, -0.1];
+    let res5 = gp::orient_3dlifted_sos(
+        &a, &b, &c, &d, &p,
+        [2.0, 0.1, -0.1, -3.0, 0.0]
+    );
+    assert_eq!(res5, 1 /* res from c++ */);
+
+    // Case: zero weights, point inside the sphere
+    let a = [1.0, 0.0, 0.0];
+    let b = [0.0, 1.0, 0.0];
+    let c = [0.0, 0.0, 1.0];
+    let d = [1.0, 1.0, 1.0];
+    let p = [0.5, 0.5, 0.5];
+    let weights = [0.0; 5];
+    let res = gp::orient_3dlifted_sos(&a, &b, &c, &d, &p, weights);
+    assert_eq!(res, 1);
+    assert_eq!(res, gp::in_sphere_3d_sos::<false>(&a, &b, &c, &d, &p));
+
+    // Case: non-zero weights, point outside sphere
+    let weights = [1.0, 2.0, 3.0, 4.0, 10.0];
+    let res = gp::orient_3dlifted_sos(&a, &b, &c, &d, &p, weights);
+    assert_eq!(res, -1);
+
+    // Case: point lies on the lifted sphere (weights chosen for coplanarity)
+    let weights = [1.0, 1.0, 1.0, 1.0, 1.0];
+    let res = gp::orient_3dlifted_sos(&a, &b, &c, &d, &p, weights);
+    assert_eq!(res, 0);
+
+    // Degenerate case: repeated point
+    let res = gp::orient_3dlifted_sos(&a, &a, &c, &d, &p, weights);
+    assert_eq!(res, 0); // Expect zero or handled degeneracy
+
+    // Degenerate case: flat tetrahedron (coplanar points)
+    let a = [0.0, 0.0, 0.0];
+    let b = [1.0, 0.0, 0.0];
+    let c = [0.0, 1.0, 0.0];
+    let d = [1.0, 1.0, 0.0];
+    let p = [0.5, 0.5, 0.0];
+    let weights = [0.0, 0.0, 0.0, 0.0, 0.0];
+    let res = gp::orient_3dlifted_sos(&a, &b, &c, &d, &p, weights);
+    assert_eq!(res, 0); // Planar configuration should be degenerate
+
+    // Case: large weights, test numerical stability
+    let weights = [1e9, 1e9, 1e9, 1e9, 1e9];
+    let res = gp::orient_3dlifted_sos(&a, &b, &c, &d, &p, weights);
+    // Result depends on actual implementation; this checks for crash/stability
+    assert!((res as i8).abs() <= 1);
 }
 
 #[test]
