@@ -20,12 +20,12 @@ keywords = ["computer-graphics", "math", "geometry", "predicates", "robust"]
 categories = ["no-std", "mathematics", "graphics"]
 
 [dependencies]
-smallvec = "2.0.0-alpha.11"
-nalgebra = { version = "0.33", features = ["macros", "matrixmultiply"], default-features = false }
+smallvec = "2.0.0-alpha.12"
+nalgebra = { version = "0.34", features = ["macros", "matrixmultiply"], default-features = false }
 robust = { version = "1.2", features = ["no_std"] }
 # legacy
 cxx = { version = "1.0", features = ["alloc", "c++20"], default-features = false, optional = true }
-libm = { version = "0.2.15", optional = true }
+libm = { version = "0.2", optional = true }
 
 [build-dependencies]
 cxx-build = { version = "1.0", optional = true }

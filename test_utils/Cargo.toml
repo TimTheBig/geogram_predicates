@@ -3,6 +3,8 @@ name = "test_utils"
 version = "0.1.0"
 edition = "2021"
 
+publish = false
+
 [dependencies]
-float_extras = "0.1.6"
-png = "0.17.16"
+float_extras = "0.1"
+png = "0.18"
