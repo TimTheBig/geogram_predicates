@@ -1,4 +1,4 @@
-use geogram_predicates::orient_3d;
+use exact_geo_predicates::orient_3d;
 use std::{fs, path::Path};
 use test_utils::{predicate_3d_test, write_to_png};
 

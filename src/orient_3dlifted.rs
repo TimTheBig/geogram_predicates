@@ -24,7 +24,7 @@ use core::cmp::Ordering;
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::orient_3dlifted_sos;
+/// use exact_geo_predicates::orient_3dlifted_sos;
 /// // Define four points that form a tetrahedron
 /// let a: [f64; 3] = [0.0, 0.0, 0.0];
 /// let b: [f64; 3] = [2.0, 0.0, 0.0];

@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-geogram_predicates = { path = "../", package = "geogram_predicates" }
+geogram_predicates = { path = "../", package = "exact_geo_predicates" }
 geogram_predicates_legacy = { git = "https://github.com/glennDittmann/geogram_predicates.git", rev = "30c375e", package = "geogram_predicates" }
 
 [[bin]]

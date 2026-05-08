@@ -24,7 +24,7 @@ use core::cmp::Ordering;
 /// # Example
 /// For a graphical representation see this [geogebra example](https://www.geogebra.org/m/etyzj96t) of the code below.
 /// ```
-/// use geogram_predicates::orient_2dlifted_sos;
+/// use exact_geo_predicates::orient_2dlifted_sos;
 ///
 /// // Define three points that form a triangle
 /// let a: [f64; 2] = [0.0, 0.0];

@@ -5,14 +5,15 @@ exclude = ["fuzz"]
 resolver = "2"
 
 [package]
-name = "geogram_predicates"
+name = "exact_geo_predicates"
 description = "Rust port of the Geogram library's predicates module"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.85.1"
 
-repository = "https://github.com/glennDittmann/geogram_predicates"
-authors = ["Glenn Dittmann", "TimTheBig"]
+repository = "https://github.com/TimTheBig/geogram_predicates"
+# Glenn made the legacy c++ bindings
+authors = ["TimTheBig", "Glenn Dittmann"]
 # when the legacy feature is enabled the c++ code it use is apache
 license = "MIT OR (MIT AND Apache-2.0)"
 

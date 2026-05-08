@@ -41,7 +41,7 @@ pub(crate) const FPG_UNCERTAIN_VALUE: Sign = Sign::Zero;
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::{Sign, geo_sign};
+/// use exact_geo_predicates::{Sign, geo_sign};
 ///
 /// let a = 42.0;
 /// let b = -42.0;
@@ -77,7 +77,7 @@ pub const fn geo_sign(value: f64) -> Sign {
 ///
 /// # Example
 /// ```
-/// # use geogram_predicates::orient_3d;
+/// # use exact_geo_predicates::orient_3d;
 /// // Define four points that form a tetrahedron
 /// let a = [0.0, 0.0, 0.0];
 /// let b = [2.0, 0.0, 0.0];
@@ -112,7 +112,7 @@ pub fn orient_3d(a: &Point3d, b: &Point3d, c: &Point3d, d: &Point3d) -> Sign {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::{Sign, orient_2d};
+/// use exact_geo_predicates::{Sign, orient_2d};
 ///
 /// // Define three points that form a triangle
 /// let a = [0.0, 0.0];
@@ -143,7 +143,7 @@ pub fn orient_2d(a: &Point2d, b: &Point2d, c: &Point2d) -> Sign {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::dot_3d;
+/// use exact_geo_predicates::dot_3d;
 ///
 /// // Define four points that form a matrix
 /// let a = [0.0, 0.0, 0.0];
@@ -186,7 +186,7 @@ pub fn dot_3d(a: &Point3d, b: &Point3d, c: &Point3d) -> bool {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::{Sign, in_circle_2d_sos};
+/// use exact_geo_predicates::{Sign, in_circle_2d_sos};
 ///
 /// // Define three points that form a triangle
 /// let a = [0.0, 0.0];
@@ -239,7 +239,7 @@ pub fn in_circle_2d_sos<const PERTURB: bool>(a: &Point2d, b: &Point2d, c: &Point
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::{Sign, in_sphere_3d_sos};
+/// use exact_geo_predicates::{Sign, in_sphere_3d_sos};
 ///
 /// // Define four points that form a tetrahedron
 /// let a = [0.0, 0.0, 0.0];
@@ -310,7 +310,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 // ///
 // /// # Example
 // /// ```
-// /// use geogram_predicates as gp;
+// /// use exact_geo_predicates as gp;
 // ///
 // /// // Define three points that form a matrix
 // /// let a = [1.0, 2.0, 3.0];
@@ -399,7 +399,7 @@ pub fn in_sphere_3d_sos<const PERTURB: bool>(
 mod geogram_ffi {
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {
-        include!("geogram_predicates/include/geogram_ffi.h");
+        include!("exact_geo_predicates/include/geogram_ffi.h");
 
         /// Computes the sign of the determinant of a 4x4 matrix formed by four 4D points.
         ///
@@ -411,7 +411,7 @@ mod geogram_ffi {
         ///
         /// # Example
         /// ```
-        /// use geogram_predicates as gp;
+        /// use exact_geo_predicates as gp;
         ///
         /// // Define four points that form a matrix
         /// let a = [1.0, 2.0, 3.0, 4.0];
@@ -434,7 +434,7 @@ mod geogram_ffi {
         ///
         /// # Example
         /// ```
-        /// use geogram_predicates as gp;
+        /// use exact_geo_predicates as gp;
         ///
         /// // Define three points that form a matrix
         /// let a = [1.0, 2.0, 3.0];
@@ -470,7 +470,7 @@ mod geogram_ffi {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::points_are_colinear_3d;
+/// use exact_geo_predicates::points_are_colinear_3d;
 ///
 /// // Define three points on a line
 /// let p1 = [0.0, 0.0, 0.0];
@@ -506,7 +506,7 @@ pub fn points_are_colinear_3d(p1: &[f64; 3], p2: &[f64; 3], p3: &[f64; 3]) -> bo
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::points_are_identical_2d;
+/// use exact_geo_predicates::points_are_identical_2d;
 ///
 /// let p1 = [4.0, 2.0];
 /// let p2 = [4.0, 2.0];
@@ -530,7 +530,7 @@ pub const fn points_are_identical_2d(p1: &Point2d, p2: &Point2d) -> bool {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates::points_are_identical_3d;
+/// use exact_geo_predicates::points_are_identical_3d;
 ///
 /// let p1 = [4.0, 2.0, 0.42];
 /// let p2 = [4.0, 2.0, 0.42];
@@ -556,7 +556,7 @@ pub const fn points_are_identical_3d(p1: &Point3d, p2: &Point3d) -> bool {
 ///
 /// # Example
 /// ```
-/// use geogram_predicates as gp;
+/// use exact_geo_predicates as gp;
 ///
 /// // Define four points that form a tetrahedron
 /// let a = [0.0, 0.0, 0.0];

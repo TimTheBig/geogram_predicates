@@ -1,5 +1,5 @@
 use float_extras::f64::nextafter;
-use geogram_predicates::in_circle_2d_sos;
+use exact_geo_predicates::in_circle_2d_sos;
 use std::{fs, path::Path};
 use test_utils::{predicate_2d_test, write_to_png};
 

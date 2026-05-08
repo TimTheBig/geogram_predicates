@@ -3,7 +3,7 @@
 /// Build an `Expansion` from a comma-separated list of `f64` literals or expressions.
 ///
 /// ```
-/// # use geogram_predicates::expansion;
+/// # use exact_geo_predicates::expansion;
 /// let e = expansion![1.0, 2.5, 3.75];
 /// assert_eq!(e.len(), 3);
 /// assert_eq!(&e.data(), &[1.0, 2.5, 3.75]);
@@ -27,7 +27,7 @@ macro_rules! expansion {
 /// Compute the 3×3 determinant of nine `Expansion`s, returning a new `Expansion`.
 ///  
 /// ```ignore
-/// # use geogram_predicates::expansion_det3x3;
+/// # use exact_geo_predicates::expansion_det3x3;
 /// expansion_det3x3!(
 ///     a, b, c,
 ///     d, e, f,
@@ -67,7 +67,7 @@ macro_rules! expansion_det3x3 {
 /// Compute the 2×2 determinant of four `Expansion`s, returning a new `Expansion`.
 ///  
 /// ```ignore
-/// # use geogram_predicates::expansion_det2x2;
+/// # use exact_geo_predicates::expansion_det2x2;
 /// expansion_det2x2!(
 ///     a, b,
 ///     c, d,

@@ -78,13 +78,13 @@ impl<const N: usize> Expansion<N> {
     ///
     /// ## Examples
     /// ```
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let e: Expansion = Expansion::with_capacity(6);
     /// assert_eq!(e.capacity(), 6); // 6 is the default Expansion capacity
     /// assert_eq!(e.len(), 0);
     /// ```
     /// ```should_panic
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let e = Expansion::<9>::with_capacity(10);
     /// assert_eq!(e.capacity(), 10);
     /// assert_eq!(e.len(), 0);
@@ -139,7 +139,7 @@ impl<const N: usize> Expansion<N> {
     ///
     /// ## Examples
     /// ```
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let mut e = Expansion::<2>::with_capacity(2);
     /// e.assign(3.14);
     /// assert_eq!(e.len(), 1);
@@ -168,7 +168,7 @@ impl<const N: usize> Expansion<N> {
     ///
     /// ## Examples
     /// ```
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let mut e = Expansion::from(2.0);
     /// e.negate();
     /// assert_eq!(e[0], -2.0);
@@ -193,7 +193,7 @@ impl<const N: usize> Expansion<N> {
     ///
     /// ## Examples
     /// ```
-    /// # use geogram_predicates::expansion;
+    /// # use exact_geo_predicates::expansion;
     /// let mut e = expansion![1.0, 0.0000001];
     /// assert!(e.estimate() > 1.0);
     /// ```
@@ -222,7 +222,7 @@ impl<const N: usize> Expansion<N> {
     ///
     /// ## Examples
     /// ```
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let a = Expansion::from(1.0);
     /// let b = Expansion::from(2.0);
     /// assert!(a < b);
@@ -363,7 +363,7 @@ impl<const N: usize> Expansion<N> {
     /// [Shewchuk 97](https://people.eecs.berkeley.edu/~jrs/papers/robustr.pdf)
     /// ## Usage
     /// ```
-    /// # use geogram_predicates::Expansion;
+    /// # use exact_geo_predicates::Expansion;
     /// let mut expansion = Expansion::from([0.1, 0.1]);
     /// expansion.compress_expansion();
     ///
